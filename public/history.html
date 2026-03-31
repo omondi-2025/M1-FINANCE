@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>M1 Finance | History</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .section-title {
+      margin-bottom: 10px;
+      color: #0d47a1;
+    }
+    .history-meta {
+      font-size: 12px;
+      color: #666;
+    }
+    .empty-state {
+      text-align: center;
+      color: #666;
+      padding: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <header class="top-header">
+    <h1 class="company-name">M1 FINANCE HISTORY</h1>
+    <p class="user-info">Recharge, withdrawal, referral and earnings records</p>
+  </header>
+
+  <main class="dashboard-content">
+    <div class="dashboard-card stats-grid">
+      <div class="stat-box">
+        <p>Balance</p>
+        <h3>KES <span id="summaryBalance">0</span></h3>
+      </div>
+      <div class="stat-box">
+        <p>Total Recharged</p>
+        <h3>KES <span id="summaryRecharge">0</span></h3>
+      </div>
+      <div class="stat-box">
+        <p>Total Cashouts</p>
+        <h3>KES <span id="summaryCashouts">0</span></h3>
+      </div>
+      <div class="stat-box">
+        <p>Referral Earnings</p>
+        <h3>KES <span id="summaryReferral">0</span></h3>
+      </div>
+    </div>
+
+    <div class="dashboard-card">
+      <h3 class="section-title">Recharge History</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="rechargeHistoryBody">
+            <tr><td colspan="4">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="dashboard-card">
+      <h3 class="section-title">Withdrawal History</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="withdrawalHistoryBody">
+            <tr><td colspan="3">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="dashboard-card">
+      <h3 class="section-title">Referral History</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Referral</th>
+              <th>Level</th>
+              <th>Package</th>
+              <th>Invested</th>
+              <th>Commission</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="referralHistoryBody">
+            <tr><td colspan="6">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="dashboard-card">
+      <h3 class="section-title">Earnings History</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Title</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody id="earningsHistoryBody">
+            <tr><td colspan="6">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <div id="bottom-nav"></div>
+  <script src="js/bottomNav.js"></script>
+
+  <script>
+    const token = localStorage.getItem("token");
+    if (!token) window.location.href = "signin.html";
+
+    function formatCurrency(value) {
+      return Number(value || 0).toLocaleString();
+    }
+
+    function formatDate(value) {
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString();
+    }
+
+    function getStatusClass(status) {
+      if (status === "Approved" || status === "Completed" || status === "Claimed" || status === "Active") return "status-completed";
+      if (status === "Rejected") return "status-inactive";
+      return "status-pending";
+    }
+
+    function renderRows(bodyId, rows, emptyColspan) {
+      const tbody = document.getElementById(bodyId);
+      if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="${emptyColspan}" class="empty-state">No records yet</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = rows.join("");
+    }
+
+    async function loadHistory() {
+      try {
+        const res = await fetch("/api/user/history", {
+          headers: { Authorization: "Bearer " + token }
+        });
+
+        if (res.status === 401) {
+          localStorage.removeItem("token");
+          window.location.href = "signin.html";
+          return;
+        }
+
+        if (!res.ok) throw new Error("Failed to load history");
+        const data = await res.json();
+
+        document.getElementById("summaryBalance").textContent = formatCurrency(data.summary?.balance);
+        document.getElementById("summaryRecharge").textContent = formatCurrency(data.summary?.totalRecharged);
+        document.getElementById("summaryCashouts").textContent = formatCurrency(data.summary?.totalCashouts);
+        document.getElementById("summaryReferral").textContent = formatCurrency(data.summary?.totalReferralEarnings);
+
+        renderRows(
+          "rechargeHistoryBody",
+          (data.recharges || []).map((item) => `
+            <tr>
+              <td>${item.code || "-"}</td>
+              <td>KES ${formatCurrency(item.amount)}</td>
+              <td class="${getStatusClass(item.status)}">${item.status}</td>
+              <td>${formatDate(item.createdAt)}</td>
+            </tr>
+          `),
+          4
+        );
+
+        renderRows(
+          "withdrawalHistoryBody",
+          (data.withdrawals || []).map((item) => `
+            <tr>
+              <td>KES ${formatCurrency(item.amount)}</td>
+              <td class="${getStatusClass(item.status)}">${item.status}</td>
+              <td>${formatDate(item.date)}</td>
+            </tr>
+          `),
+          3
+        );
+
+        renderRows(
+          "referralHistoryBody",
+          (data.referrals || []).map((item) => `
+            <tr>
+              <td>${item.referredUser || "-"}</td>
+              <td>Level ${item.level}</td>
+              <td>${item.packageName || "-"}</td>
+              <td>KES ${formatCurrency(item.investedAmount)}</td>
+              <td>KES ${formatCurrency(item.commission)}</td>
+              <td>${formatDate(item.date)}</td>
+            </tr>
+          `),
+          6
+        );
+
+        renderRows(
+          "earningsHistoryBody",
+          (data.earningsHistory || []).map((item) => `
+            <tr>
+              <td>${item.type || "-"}</td>
+              <td>${item.title || "-"}</td>
+              <td>KES ${formatCurrency(item.amount)}</td>
+              <td class="${getStatusClass(item.status)}">${item.status}</td>
+              <td>${formatDate(item.date)}</td>
+              <td>${item.description || "-"}</td>
+            </tr>
+          `),
+          6
+        );
+      } catch (err) {
+        console.error(err);
+        alert("Failed to load history page.");
+      }
+    }
+
+    loadHistory();
+  </script>
+</body>
+</html>

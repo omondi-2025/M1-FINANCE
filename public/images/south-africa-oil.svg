@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" role="img" aria-label="South Africa Oil">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0d47a1"/>
+      <stop offset="100%" stop-color="#42a5f5"/>
+    </linearGradient>
+    <linearGradient id="ground" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#1b5e20"/>
+      <stop offset="100%" stop-color="#2e7d32"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" fill="url(#sky)"/>
+  <rect y="360" width="800" height="140" fill="url(#ground)"/>
+  <circle cx="130" cy="100" r="38" fill="#ffd54f"/>
+  <rect x="120" y="175" width="28" height="185" rx="8" fill="#263238"/>
+  <rect x="145" y="165" width="185" height="22" rx="11" fill="#37474f"/>
+  <rect x="290" y="185" width="18" height="120" rx="9" fill="#263238"/>
+  <path d="M307 220 C360 180, 430 175, 495 210" fill="none" stroke="#90caf9" stroke-width="8" stroke-linecap="round"/>
+  <path d="M510 205 C560 175, 620 175, 680 205" fill="none" stroke="#90caf9" stroke-width="8" stroke-linecap="round"/>
+  <path d="M475 150 c18 -32 42 -32 60 0 c0 28 -30 55 -30 55 s-30 -27 -30 -55z" fill="#111827"/>
+  <path d="M610 138 c15 -26 36 -26 51 0 c0 24 -25 45 -25 45 s-26 -21 -26 -45z" fill="#111827" opacity="0.9"/>
+  <text x="400" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="44" font-weight="700" fill="#ffffff">South Africa Oil</text>
+</svg>

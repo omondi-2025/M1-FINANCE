@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>M1 Finance | Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .admin-shell { padding-bottom: 30px; }
+    .top-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .admin-badge {
+      background: rgba(255,255,255,0.15);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+    }
+    .mini-btn {
+      width: auto;
+      margin-top: 0;
+      padding: 8px 12px;
+      border-radius: 8px;
+    }
+    .reject-btn { background: #b91c1c; }
+    .action-stack {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .notification-admin-item {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-top: 10px;
+    }
+    #adminPanel { display: none; }
+    #loginError {
+      color: #b91c1c;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="adminLoginSection" class="auth-page">
+    <form id="adminLoginForm">
+      <h2>Admin Login</h2>
+      <div id="loginError"></div>
+
+      <div class="input-group">
+        <i class="fa fa-user-shield"></i>
+        <input type="text" id="adminUsername" placeholder="Username" required />
+      </div>
+
+      <div class="input-group">
+        <i class="fa fa-lock"></i>
+        <input type="password" id="adminPassword" placeholder="Password" required />
+      </div>
+
+      <button type="submit">Sign In as Admin</button>
+    </form>
+  </div>
+
+  <div id="adminPanel" class="admin-shell">
+    <header class="top-header">
+      <div class="top-actions">
+        <div>
+          <h1 class="company-name">M1 FINANCE ADMIN</h1>
+          <p class="user-info">Confirm recharges and withdrawals from one dashboard</p>
+        </div>
+        <div>
+          <span id="adminUserBadge" class="admin-badge"></span>
+          <button class="mini-btn reject-btn" type="button" onclick="logoutAdmin()">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="dashboard-content">
+      <div class="dashboard-card stats-grid">
+        <div class="stat-box">
+          <p>Pending Recharges</p>
+          <h3><span id="pendingRecharges">0</span></h3>
+        </div>
+        <div class="stat-box">
+          <p>Pending Withdrawals</p>
+          <h3><span id="pendingWithdrawals">0</span></h3>
+        </div>
+        <div class="stat-box">
+          <p>Approved Deposits</p>
+          <h3>KES <span id="approvedRechargeAmount">0</span></h3>
+        </div>
+        <div class="stat-box">
+          <p>Completed Cashouts</p>
+          <h3>KES <span id="completedWithdrawalAmount">0</span></h3>
+        </div>
+      </div>
+
+      <div class="dashboard-card">
+        <h3 style="margin-bottom: 10px; color: #0d47a1;">Company Notifications</h3>
+        <form id="notificationForm" style="width:100%;box-shadow:none;padding:0;">
+          <div class="input-group">
+            <i class="fa fa-bell"></i>
+            <input type="text" id="notificationTitle" placeholder="Notification title" required />
+          </div>
+          <div class="input-group">
+            <textarea id="notificationDescription" rows="4" placeholder="Notification description" required style="width:100%;padding:12px;border-radius:8px;border:1px solid #ccc;"></textarea>
+          </div>
+          <button type="submit">Add Notification</button>
+        </form>
+        <div id="adminNotificationList" style="margin-top:12px;"></div>
+      </div>
+
+      <div class="dashboard-card">
+        <h3 style="margin-bottom: 10px; color: #0d47a1;">Recharge Requests</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Phone</th>
+                <th>Code</th>
+                <th>Amount</th>
+                <th>Message</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="adminRechargeBody">
+              <tr><td colspan="7">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="dashboard-card">
+        <h3 style="margin-bottom: 10px; color: #0d47a1;">Withdrawal Requests</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Phone</th>
+                <th>Requested</th>
+                <th>Fee</th>
+                <th>Net Payout</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="adminWithdrawalBody">
+              <tr><td colspan="6">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const loginSection = document.getElementById("adminLoginSection");
+    const adminPanel = document.getElementById("adminPanel");
+    const loginForm = document.getElementById("adminLoginForm");
+    const loginError = document.getElementById("loginError");
+    let adminToken = localStorage.getItem("adminToken") || "";
+    let adminUsername = localStorage.getItem("adminUsername") || "";
+
+    function formatCurrency(value) {
+      return Number(value || 0).toLocaleString();
+    }
+
+    function formatDate(value) {
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString();
+    }
+
+    function getStatusClass(status) {
+      if (status === "Approved" || status === "Completed") return "status-completed";
+      if (status === "Rejected") return "status-inactive";
+      return "status-pending";
+    }
+
+    function setAdminView(isLoggedIn) {
+      loginSection.style.display = isLoggedIn ? "none" : "flex";
+      adminPanel.style.display = isLoggedIn ? "block" : "none";
+      document.getElementById("adminUserBadge").textContent = isLoggedIn ? adminUsername : "";
+    }
+
+    async function loginAdmin(event) {
+      event.preventDefault();
+      loginError.textContent = "";
+
+      const username = document.getElementById("adminUsername").value.trim();
+      const password = document.getElementById("adminPassword").value.trim();
+
+      try {
+        const res = await fetch("/api/admin/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || "Admin login failed");
+        }
+
+        adminToken = data.token;
+        adminUsername = data.username;
+        localStorage.setItem("adminToken", adminToken);
+        localStorage.setItem("adminUsername", adminUsername);
+        setAdminView(true);
+        loadOverview();
+      } catch (err) {
+        loginError.textContent = err.message || "Admin login failed";
+      }
+    }
+
+    function logoutAdmin() {
+      adminToken = "";
+      adminUsername = "";
+      localStorage.removeItem("adminToken");
+      localStorage.removeItem("adminUsername");
+      setAdminView(false);
+    }
+
+    function buildActionButtons(kind, item) {
+      if (item.status !== "Pending") {
+        return `<span class="${getStatusClass(item.status)}">${item.status}</span>`;
+      }
+
+      return `
+        <div class="action-stack">
+          <button class="mini-btn" type="button" onclick="reviewItem('${kind}', '${item._id}', 'approve')">Confirm</button>
+          <button class="mini-btn reject-btn" type="button" onclick="reviewItem('${kind}', '${item._id}', 'reject')">Reject</button>
+        </div>
+      `;
+    }
+
+    function renderOverview(data) {
+      document.getElementById("pendingRecharges").textContent = data.summary?.pendingRecharges || 0;
+      document.getElementById("pendingWithdrawals").textContent = data.summary?.pendingWithdrawals || 0;
+      document.getElementById("approvedRechargeAmount").textContent = formatCurrency(data.summary?.approvedRechargeAmount);
+      document.getElementById("completedWithdrawalAmount").textContent = formatCurrency(data.summary?.completedWithdrawalAmount);
+
+      const notificationList = document.getElementById("adminNotificationList");
+      const notificationItems = (data.notifications || []).map((item) => `
+        <div class="notification-admin-item">
+          <p><strong>${item.title}</strong></p>
+          <p>${item.description}</p>
+          <p class="history-meta">Visible until ${formatDate(item.expiresAt)}</p>
+        </div>
+      `);
+      notificationList.innerHTML = notificationItems.length ? notificationItems.join("") : `<p>No company notifications created yet.</p>`;
+
+      const rechargeBody = document.getElementById("adminRechargeBody");
+      const rechargeRows = (data.recharges || []).map((item) => `
+        <tr>
+          <td>${item.fullName || "-"}<div class="history-meta">${formatDate(item.createdAt)}</div></td>
+          <td>${item.phone || "-"}</td>
+          <td>${item.code || "-"}</td>
+          <td>KES ${formatCurrency(item.amount)}</td>
+          <td>${item.transactionMessage || "No M-Pesa message yet"}</td>
+          <td class="${getStatusClass(item.status)}">${item.status}</td>
+          <td>${buildActionButtons('recharges', item)}</td>
+        </tr>
+      `);
+      rechargeBody.innerHTML = rechargeRows.length ? rechargeRows.join("") : `<tr><td colspan="7">No recharge records found.</td></tr>`;
+
+      const withdrawalBody = document.getElementById("adminWithdrawalBody");
+      const withdrawalRows = (data.withdrawals || []).map((item) => `
+        <tr>
+          <td>${item.fullName || "-"}</td>
+          <td>${item.phone || "-"}</td>
+          <td>KES ${formatCurrency(item.amount)}</td>
+          <td>KES ${formatCurrency(item.serviceFee || 0)}</td>
+          <td>KES ${formatCurrency(item.netAmount || item.amount)}</td>
+          <td class="${getStatusClass(item.status)}">${item.status}</td>
+          <td>${formatDate(item.date)}</td>
+          <td>${buildActionButtons('withdrawals', item)}</td>
+        </tr>
+      `);
+      withdrawalBody.innerHTML = withdrawalRows.length ? withdrawalRows.join("") : `<tr><td colspan="8">No withdrawal records found.</td></tr>`;
+    }
+
+    async function loadOverview() {
+      if (!adminToken) return;
+
+      try {
+        const res = await fetch("/api/admin/overview", {
+          headers: { Authorization: "Bearer " + adminToken }
+        });
+
+        if (res.status === 401 || res.status === 403) {
+          logoutAdmin();
+          return;
+        }
+
+        if (!res.ok) throw new Error("Failed to load admin data");
+        const data = await res.json();
+        renderOverview(data);
+      } catch (err) {
+        alert(err.message || "Failed to load admin data");
+      }
+    }
+
+    async function createNotification(event) {
+      event.preventDefault();
+
+      try {
+        const res = await fetch('/api/admin/notifications', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + adminToken,
+          },
+          body: JSON.stringify({
+            title: document.getElementById('notificationTitle').value.trim(),
+            description: document.getElementById('notificationDescription').value.trim(),
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Failed to create notification');
+        }
+
+        alert(data.message);
+        document.getElementById('notificationTitle').value = '';
+        document.getElementById('notificationDescription').value = '';
+        loadOverview();
+      } catch (err) {
+        alert(err.message || 'Failed to create notification');
+      }
+    }
+
+    async function reviewItem(kind, id, action) {
+      if (!confirm(`Are you sure you want to ${action} this ${kind.slice(0, -1)} request?`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/admin/${kind}/${id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + adminToken,
+          },
+          body: JSON.stringify({ action }),
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || "Action failed");
+        }
+
+        alert(data.message);
+        loadOverview();
+      } catch (err) {
+        alert(err.message || "Action failed");
+      }
+    }
+
+    loginForm.addEventListener("submit", loginAdmin);
+    document.getElementById('notificationForm').addEventListener('submit', createNotification);
+
+    if (adminToken) {
+      setAdminView(true);
+      loadOverview();
+    } else {
+      setAdminView(false);
+    }
+  </script>
+</body>
+</html>

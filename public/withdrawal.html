@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>M1 Finance | Withdraw</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <!-- Main CSS -->
+  <link rel="stylesheet" href="css/style.css">
+
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="top-header">
+    <h1 class="company-name">M1 FINANCE</h1>
+    <p class="user-info">
+      <i class="fa fa-user"></i>
+      <span id="fullName">Loading...</span>
+      &nbsp; | &nbsp;
+      <i class="fa fa-phone"></i>
+      <span id="phone">Loading...</span>
+    </p>
+  </header>
+
+  <!-- WITHDRAWAL FORM -->
+  <main class="dashboard-content">
+    <div class="dashboard-card withdraw-card">
+      <h2>Withdraw Funds</h2>
+
+      <p id="balanceInfo">Available Balance: KES <span id="balance">0.00</span></p>
+
+      <!-- Alert messages -->
+      <div id="alertMsg" class="alert"></div>
+
+      <form id="withdrawForm" class="withdraw-form">
+  <div class="input-group">
+    <label for="phoneInput">Phone Number</label>
+    <input type="text" id="phoneInput" disabled />
+  </div>
+
+  <div class="input-group">
+    <label for="amountInput">Amount (Minimum Ksh 80)</label>
+    <input type="number" id="amountInput" placeholder="Enter amount" min="80" required />
+  </div>
+
+  <div id="feePreview" style="width:100%; text-align:left; font-size:14px; color:#444; background:#f8fafc; padding:10px 12px; border-radius:8px; border:1px solid #e5e7eb; margin-bottom:12px;">
+    Service fee (10%): <strong>KES 0.00</strong><br>
+    Net amount to receive: <strong>KES 0.00</strong>
+  </div>
+
+  <button type="submit" class="action-btn withdraw-btn">
+    <i class="fa fa-money-bill-wave"></i> Withdraw
+  </button>
+</form>
+      
+<div class="withdraw-rules">
+  <h3>Withdrawal Rules</h3>
+  <ul>
+    <li>Minimum withdrawal amount is <strong>KES 80</strong>.</li>
+    <li>A <strong>10% service fee</strong> is deducted from every withdrawal request.</li>
+    <li>Withdrawals are processed between <strong>6:00 AM and 7:00 PM</strong>.</li>
+    <li>Your phone number is automatically loaded from your account and cannot be changed.</li>
+    <li>Please ensure your account balance is sufficient before submitting a withdrawal request.</li>
+    <li>Withdrawals may take a short time to be processed depending on network conditions.</li>
+  </ul>
+</div>
+
+      <!-- Withdrawal History -->
+      <h3 style="margin-top:30px;">Withdrawal History</h3>
+      <div class="table-wrapper">
+  <table class="withdraw-table">
+    <thead>
+      <tr>
+        <th>Full Name</th>
+        <th>Phone</th>
+        <th>Requested</th>
+        <th>Fee</th>
+        <th>Receives</th>
+        <th>Date & Time</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="historyBody">
+      <tr><td colspan="7">Loading history...</td></tr>
+    </tbody>
+  </table>
+</div>
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <a href="index.html"><i class="fa fa-house"></i> Home</a>
+    <a href="level.html"><i class="fa fa-layer-group"></i> Level</a>
+    <a href="history.html"><i class="fa fa-clock-rotate-left"></i> History</a>
+    <a href="team.html"><i class="fa fa-users"></i> Team</a>
+    <a href="profile.html" class="active"><i class="fa fa-user"></i> Profile</a>
+  </nav>
+
+  <!-- SCRIPT -->
+  <script>
+    const token = localStorage.getItem("token");
+    if (!token) window.location.href = "signin.html";
+
+    const alertMsg = document.getElementById("alertMsg");
+
+    function showAlert(message, type="success") {
+      alertMsg.textContent = message;
+      alertMsg.className = type === "success" ? "alert alert-success" : "alert alert-error";
+      alertMsg.style.display = "block";
+      setTimeout(() => { alertMsg.style.display = "none"; }, 5000);
+    }
+
+    function updateFeePreview() {
+      const amount = Number(document.getElementById("amountInput").value || 0);
+      const serviceFee = amount > 0 ? amount * 0.10 : 0;
+      const netAmount = amount > 0 ? amount - serviceFee : 0;
+      document.getElementById("feePreview").innerHTML = `
+        Service fee (10%): <strong>KES ${serviceFee.toFixed(2)}</strong><br>
+        Net amount to receive: <strong>KES ${netAmount.toFixed(2)}</strong>
+      `;
+    }
+
+    // Load user info
+    async function loadUser() {
+      try {
+        const res = await fetch("/api/user/dashboard", {
+          headers: { Authorization: "Bearer " + token }
+        });
+        const data = await res.json();
+        document.getElementById("fullName").textContent = data.fullName;
+        document.getElementById("phone").textContent = data.phone;
+        document.getElementById("balance").textContent = Number(data.balance).toFixed(2);
+        document.getElementById("phoneInput").value = data.phone;
+      } catch (err) {
+        console.error("Error loading user:", err);
+      }
+    }
+
+    // Check withdrawal time
+    function isWithinWithdrawalTime() {
+      const hour = new Date().getHours();
+      return hour >= 6 && hour < 19;
+    }
+
+    // Check if user has withdrawn today
+    async function hasWithdrawnToday() {
+      try {
+        const res = await fetch("/api/user/withdrawals/today", {
+          headers: { Authorization: "Bearer " + token }
+        });
+        const data = await res.json();
+        return data.hasWithdrawn;
+      } catch (err) {
+        console.error("Error checking daily withdrawal:", err);
+        return true; 
+      }
+    }
+
+    // Load withdrawal history
+    async function loadWithdrawalHistory() {
+      try {
+        const res = await fetch("/api/user/withdrawals/history", {
+          headers: { Authorization: "Bearer " + token }
+        });
+        const history = await res.json();
+        const tbody = document.getElementById("historyBody");
+        tbody.innerHTML = "";
+
+        if (!history.length) {
+          tbody.innerHTML = `<tr><td colspan="7">No withdrawals yet</td></tr>`;
+          return;
+        }
+
+        history.forEach(item => {
+          let statusClass = "status-pending";
+          if (item.status === "Completed") statusClass = "status-completed";
+          if (item.status === "Rejected") statusClass = "status-inactive";
+
+          const fee = Number(item.serviceFee || 0).toFixed(2);
+          const net = Number(item.netAmount || item.amount || 0).toFixed(2);
+
+          tbody.innerHTML += `
+            <tr>
+              <td>${item.fullName}</td>
+              <td>${item.phone}</td>
+              <td>${Number(item.amount).toFixed(2)}</td>
+              <td>${fee}</td>
+              <td>${net}</td>
+              <td>${new Date(item.date).toLocaleString()}</td>
+              <td class="${statusClass}">${item.status}</td>
+            </tr>
+          `;
+        });
+      } catch (err) {
+        console.error("Error loading history:", err);
+      }
+    }
+
+    // Handle withdrawal
+    document.getElementById("withdrawForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const amount = Number(document.getElementById("amountInput").value);
+
+      if (!isWithinWithdrawalTime()) {
+        showAlert("Withdrawals allowed only 6 AM - 7 PM", "error");
+        return;
+      }
+
+      if (amount < 80) {
+        showAlert("Minimum withdrawal amount is Ksh 80", "error");
+        return;
+      }
+
+      const alreadyWithdrawn = await hasWithdrawnToday();
+      if (alreadyWithdrawn) {
+        showAlert("You have already withdrawn today. Try tomorrow.", "error");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/user/withdraw", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + token
+          },
+          body: JSON.stringify({ amount })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showAlert(data.message || `Withdrawal of Ksh ${amount} submitted successfully!`, "success");
+          document.getElementById("balance").textContent = Number(data.newBalance).toFixed(2);
+          document.getElementById("amountInput").value = "";
+          updateFeePreview();
+          loadWithdrawalHistory();
+        } else {
+          showAlert(data.message || "Withdrawal failed.", "error");
+        }
+      } catch (err) {
+        console.error("Withdrawal error:", err);
+        showAlert("An error occurred. Try again.", "error");
+      }
+    });
+
+    document.getElementById("amountInput").addEventListener("input", updateFeePreview);
+
+    // Initial load
+    updateFeePreview();
+    loadUser();
+    loadWithdrawalHistory();
+  </script>
+ <script src="js/bottomNav.js"></script>
+</body>
+</html>

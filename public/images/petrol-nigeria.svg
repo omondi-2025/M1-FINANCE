@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" role="img" aria-label="Petrol in Nigeria">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b3d0b"/>
+      <stop offset="100%" stop-color="#4caf50"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" fill="url(#bg)"/>
+  <rect x="150" y="110" width="190" height="250" rx="30" fill="#ffffff"/>
+  <rect x="185" y="145" width="120" height="85" rx="12" fill="#e8f5e9" stroke="#1b5e20" stroke-width="8"/>
+  <rect x="185" y="255" width="120" height="70" rx="10" fill="#1b5e20" opacity="0.12"/>
+  <path d="M340 150 h40 a45 45 0 0 1 45 45 v105 a32 32 0 0 0 32 32 h10" fill="none" stroke="#ffffff" stroke-width="18" stroke-linecap="round"/>
+  <path d="M430 140 h70 v80" fill="none" stroke="#0d47a1" stroke-width="16" stroke-linecap="round"/>
+  <circle cx="510" cy="235" r="50" fill="#ffffff" opacity="0.95"/>
+  <path d="M510 195 c18 0 35 11 43 28 c10 22 3 52 -18 70 c-15 12 -37 17 -56 12 c-24 -6 -43 -27 -46 -53 c-5 -29 12 -55 40 -64 c12 -4 25 -3 37 1z" fill="#2e7d32"/>
+  <path d="M503 212 c-14 20 -11 44 7 61 c18 -17 21 -41 7 -61 c-4 -6 -10 -12 -14 -18 c-4 6 -10 12 -14 18z" fill="#ffffff"/>
+  <text x="400" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="44" font-weight="700" fill="#ffffff">Petrol in Nigeria</text>
+</svg>

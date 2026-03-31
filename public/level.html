@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Invest | M1 Finance</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <!-- Main CSS -->
+  <link rel="stylesheet" href="css/style.css" />
+
+  <style>
+    .history-section {
+      margin-top: 30px;
+    }
+
+    .history-list {
+      display: grid;
+      gap: 16px;
+    }
+
+    .history-card {
+      text-align: left;
+    }
+
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .history-status {
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .history-status.active {
+      background: #e8fff1;
+      color: #138a4b;
+    }
+
+    .history-status.completed {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .history-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+    }
+
+    .history-item {
+      background: rgba(0, 0, 0, 0.04);
+      padding: 10px 12px;
+      border-radius: 10px;
+    }
+
+    .history-item p {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .history-empty {
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="dashboard-content">
+
+  <!-- PAGE HEADER -->
+  <header class="top-header">
+    <h2>BUY M1 FINANCE PACKAGES</h2>
+    <p>Select an investment plan. Earnings start reflecting after the first 24 hours from the exact time you invest.</p>
+  </header>
+
+  <!-- ===== STATS ===== -->
+  <div class="stats">
+    <div class="dashboard-card stat-card">
+      <p>Total Investment</p>
+      <h2>KES <span id="totalInvestment">0</span></h2>
+    </div>
+
+    <div class="dashboard-card stat-card">
+      <p>Daily Earnings</p>
+      <h2>KES <span id="dailyEarnings">0</span></h2>
+    </div>
+
+    <div class="dashboard-card stat-card">
+      <p>Total Account Balance</p>
+      <h2>KES <span id="totalBalance">0</span></h2>
+    </div>
+  </div>
+
+  <!-- ===== PACKAGES ===== -->
+  <div class="packages" id="packages"></div>
+
+  <!-- ===== INVESTMENT HISTORY ===== -->
+  <section class="history-section">
+    <header class="top-header">
+      <h2>PACKAGE HISTORY</h2>
+      <p>See your earnings progress and package timeline</p>
+    </header>
+
+    <div id="investmentHistory" class="history-list"></div>
+  </section>
+
+</div> <!-- end dashboard-content -->
+
+<!-- 🔽 Bottom Navigation Injected Here -->
+<div id="bottom-nav"></div>
+
+<script>
+  const token = localStorage.getItem("token");
+  if (!token) window.location.href = "signin.html";
+
+  let user = null;
+
+  function formatCurrency(amount) {
+    return Number(amount || 0).toLocaleString();
+  }
+
+  function formatDateTime(value) {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "N/A" : date.toLocaleString();
+  }
+
+  function renderInvestmentHistory(investments = []) {
+    const container = document.getElementById("investmentHistory");
+    if (!container) return;
+
+    if (!investments.length) {
+      container.innerHTML = `
+        <div class="dashboard-card history-empty">
+          <p>No package history yet. Once you invest, your package timeline will appear here.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const sortedInvestments = [...investments].sort(
+      (a, b) => new Date(b.startDateTime) - new Date(a.startDateTime)
+    );
+
+    container.innerHTML = sortedInvestments.map((inv) => `
+      <div class="dashboard-card history-card">
+        <div class="history-header">
+          <h3>${inv.packageName}</h3>
+          <span class="history-status ${inv.status === "Completed" ? "completed" : "active"}">
+            ${inv.status}
+          </span>
+        </div>
+
+        <div class="history-grid">
+          <div class="history-item"><p><strong>Package Price:</strong> KES ${formatCurrency(inv.price)}</p></div>
+          <div class="history-item"><p><strong>Daily Earnings:</strong> KES ${formatCurrency(inv.dailyIncome)}</p></div>
+          <div class="history-item"><p><strong>Total Earned:</strong> KES ${formatCurrency(inv.totalEarned)}</p></div>
+          <div class="history-item"><p><strong>Days Credited:</strong> ${inv.daysCredited || 0}</p></div>
+          <div class="history-item"><p><strong>Days Remaining:</strong> ${inv.daysRemaining} day(s)</p></div>
+          <div class="history-item"><p><strong>Next Reflection:</strong> ${formatDateTime(inv.nextPayoutAt)}</p></div>
+          <div class="history-item"><p><strong>Start Date & Time:</strong> ${formatDateTime(inv.startDateTime)}</p></div>
+          <div class="history-item"><p><strong>End Date & Time:</strong> ${formatDateTime(inv.endDateTime)}</p></div>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  /* ================= LOAD PROFILE ================= */
+  async function loadUser() {
+    try {
+      const res = await fetch("/api/user/profile", {
+        headers: { Authorization: "Bearer " + token }
+      });
+      if (!res.ok) throw new Error("Failed to load profile");
+
+      const data = await res.json();
+      user = data;
+
+      document.getElementById("totalInvestment").textContent = formatCurrency(data.totalInvested);
+      document.getElementById("dailyEarnings").textContent = formatCurrency(data.dailyIncome);
+      document.getElementById("totalBalance").textContent = formatCurrency(data.balance);
+
+      renderInvestmentHistory(data.investments || []);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to load user data");
+    }
+  }
+
+  /* ================= PACKAGES ================= */
+  const packages = [
+    {name:"Starter", price:800, daily:40, total:1600, durationDays:40, img:"/images/watch1.jpg"},
+    {name:"Bronze", price:1600, daily:80, total:3200, durationDays:40, img:"/images/watch2.jpg"},
+    {name:"Silver", price:6000, daily:300, total:12000, durationDays:40, img:"/images/watch3.jpg"},
+    {name:"Gold", price:15000, daily:750, total:30000, durationDays:40, img:"/images/watch4.jpg"},
+    {name:"Diamond", price:32000, daily:1600, total:64000, durationDays:40, img:"/images/watch5.jpg"},
+    {name:"Platinum", price:75000, daily:3750, total:150000, durationDays:40, img:"/images/watch6.jpg"},
+  ];
+
+  function renderPackages() {
+    const container = document.getElementById("packages");
+    container.innerHTML = "";
+
+    packages.forEach(pkg => {
+      container.innerHTML += `
+        <div class="dashboard-card package-card">
+          <img src="${pkg.img}" class="package-img"/>
+          <h3>${pkg.name}</h3>
+          <p>Price: KES ${formatCurrency(pkg.price)}</p>
+          <p>Daily Earnings: KES ${formatCurrency(pkg.daily)}</p>
+          <p>Duration: ${pkg.durationDays} Days</p>
+          <p>Total Return: KES ${formatCurrency(pkg.total)}</p>
+
+          <button class="action-btn" onclick="invest('${pkg.name}', ${pkg.price})">
+            Invest
+          </button>
+        </div>
+      `;
+    });
+  }
+
+  /* ================= INVEST ================= */
+  async function invest(name, price) {
+    if (!user) return;
+
+    if (user.balance < price) {
+      alert("Insufficient balance");
+      return;
+    }
+
+    const ok = confirm(
+      `${user.fullName}, do you want to invest in ${name} package that costs KES ${price}?`
+    );
+    if (!ok) return;
+
+    try {
+      const res = await fetch("/api/invest", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token
+        },
+        body: JSON.stringify({ package: name })
+      });
+
+      const resp = await res.json();
+      if (!res.ok) {
+        throw new Error(resp.error || "Failed to invest in package");
+      }
+
+      alert(resp.message || "Investment successful");
+      await loadUser();
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "Failed to invest. Try again.");
+    }
+  }
+
+  /* ================= INIT ================= */
+  renderPackages();
+  loadUser();
+
+</script>
+
+<!-- Bottom Navigation Script -->
+<script src="js/bottomNav.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>M1 Finance | Support</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="top-header">
+    <h1 class="company-name">SUPPORT</h1>
+    <p class="user-info">Follow the email format below and send your support request directly to M1 Finance.</p>
+  </header>
+
+  <main class="dashboard-content">
+    <div class="dashboard-card">
+      <p style="margin-bottom: 12px; color:#444; line-height:1.6;">
+        Please include your <strong>full name</strong>, <strong>reply email</strong>, <strong>phone number</strong>, a clear <strong>subject</strong>,
+        and a complete detailed message so we can respond quickly.
+      </p>
+
+      <form id="supportForm" style="width:100%; box-shadow:none; padding:0;">
+        <div class="input-group">
+          <i class="fa fa-user"></i>
+          <input type="text" id="fullName" placeholder="Full name" required />
+        </div>
+
+        <div class="input-group">
+          <i class="fa fa-envelope"></i>
+          <input type="email" id="replyEmail" placeholder="Reply email" required />
+        </div>
+
+        <div class="input-group">
+          <i class="fa fa-phone"></i>
+          <input type="tel" id="phone" placeholder="Phone number" required />
+        </div>
+
+        <div class="input-group">
+          <i class="fa fa-tag"></i>
+          <input type="text" id="subject" placeholder="Subject" required />
+        </div>
+
+        <div class="input-group">
+          <textarea id="message" rows="8" placeholder="Write your full complete support email here..." required style="width:100%; padding:12px; border-radius:8px; border:1px solid #ccc;"></textarea>
+        </div>
+
+        <button type="submit">Send Support Email</button>
+      </form>
+    </div>
+  </main>
+
+  <div id="bottom-nav"></div>
+  <script src="js/bottomNav.js"></script>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = 'signin.html';
+
+    async function loadProfile() {
+      const res = await fetch('/api/user/profile', {
+        headers: { Authorization: 'Bearer ' + token },
+      });
+
+      if (res.status === 401) {
+        localStorage.removeItem('token');
+        window.location.href = 'signin.html';
+        return;
+      }
+
+      const data = await res.json();
+      document.getElementById('fullName').value = data.fullName || '';
+      document.getElementById('replyEmail').value = data.email || '';
+      document.getElementById('phone').value = data.phone || '';
+    }
+
+    document.getElementById('supportForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      try {
+        const res = await fetch('/api/user/support', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + token,
+          },
+          body: JSON.stringify({
+            fullName: document.getElementById('fullName').value.trim(),
+            replyEmail: document.getElementById('replyEmail').value.trim(),
+            phone: document.getElementById('phone').value.trim(),
+            subject: document.getElementById('subject').value.trim(),
+            message: document.getElementById('message').value.trim(),
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.message || 'Failed to send support email');
+        }
+
+        alert(data.message);
+        document.getElementById('subject').value = '';
+        document.getElementById('message').value = '';
+      } catch (err) {
+        alert(err.message || 'Failed to send support email');
+      }
+    });
+
+    loadProfile();
+  </script>
+</body>
+</html>

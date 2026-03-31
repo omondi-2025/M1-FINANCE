@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>M1 Finance | Financial Statement</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    @media print {
+      .no-print, .bottom-nav { display: none !important; }
+      body { background: #fff; }
+    }
+  </style>
+</head>
+<body>
+  <header class="top-header">
+    <h1 class="company-name">FINANCIAL STATEMENT</h1>
+    <p class="user-info">Choose a date range, review the statement, then use the PDF button to save it.</p>
+  </header>
+
+  <main class="dashboard-content">
+    <div class="dashboard-card no-print">
+      <div class="input-group">
+        <label for="fromDate">From Date</label>
+        <input type="date" id="fromDate" />
+      </div>
+
+      <div class="input-group">
+        <label for="toDate">To Date</label>
+        <input type="date" id="toDate" />
+      </div>
+
+      <div class="action-buttons">
+        <button type="button" class="action-btn recharge-btn" onclick="loadStatement()">Generate Statement</button>
+        <button type="button" class="action-btn withdraw-btn" onclick="window.print()">Download PDF</button>
+      </div>
+    </div>
+
+    <div class="dashboard-card stats-grid">
+      <div class="stat-box"><p>Total Recharges</p><h3>KES <span id="sumRecharges">0</span></h3></div>
+      <div class="stat-box"><p>Total Withdrawals</p><h3>KES <span id="sumWithdrawals">0</span></h3></div>
+      <div class="stat-box"><p>Total Earnings</p><h3>KES <span id="sumEarnings">0</span></h3></div>
+      <div class="stat-box"><p>Wealth Fund Profit</p><h3>KES <span id="sumWealth">0</span></h3></div>
+    </div>
+
+    <div class="dashboard-card">
+      <h3 style="margin-bottom: 10px; color:#0d47a1;">Statement Records</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Category</th>
+              <th>Description</th>
+              <th>Status</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody id="statementBody">
+            <tr><td colspan="5">Generate a statement to view records.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <div id="bottom-nav"></div>
+  <script src="js/bottomNav.js"></script>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = 'signin.html';
+
+    function formatCurrency(value) {
+      return Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatDate(value) {
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString();
+    }
+
+    function buildDateDefaults() {
+      const today = new Date();
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      document.getElementById('fromDate').value = monthStart.toISOString().split('T')[0];
+      document.getElementById('toDate').value = today.toISOString().split('T')[0];
+    }
+
+    async function loadStatement() {
+      const from = document.getElementById('fromDate').value;
+      const to = document.getElementById('toDate').value;
+
+      try {
+        const res = await fetch(`/api/user/statement?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, {
+          headers: { Authorization: 'Bearer ' + token },
+        });
+
+        if (res.status === 401) {
+          localStorage.removeItem('token');
+          window.location.href = 'signin.html';
+          return;
+        }
+
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.error || 'Failed to load statement');
+        }
+
+        const data = await res.json();
+        document.getElementById('sumRecharges').textContent = formatCurrency(data.summary?.totalRecharges);
+        document.getElementById('sumWithdrawals').textContent = formatCurrency(data.summary?.totalWithdrawals);
+        document.getElementById('sumEarnings').textContent = formatCurrency(data.summary?.totalEarnings);
+        document.getElementById('sumWealth').textContent = formatCurrency(data.summary?.totalWealthFundProfit);
+
+        const rows = [];
+        (data.recharges || []).forEach((item) => rows.push({
+          date: item.createdAt,
+          category: 'Recharge',
+          description: item.code ? `Recharge code ${item.code}` : 'Recharge request',
+          status: item.status,
+          amount: item.amount,
+        }));
+        (data.withdrawals || []).forEach((item) => rows.push({
+          date: item.date,
+          category: 'Withdrawal',
+          description: 'Withdrawal request',
+          status: item.status,
+          amount: item.amount,
+        }));
+        (data.earnings || []).forEach((item) => rows.push({
+          date: item.creditedAt,
+          category: item.sourceType,
+          description: item.description || item.sourceName,
+          status: 'Credited',
+          amount: item.amount,
+        }));
+        (data.wealthFunds || []).forEach((item) => rows.push({
+          date: item.startedAt,
+          category: 'Wealth Fund',
+          description: `${item.planName} investment`,
+          status: item.status,
+          amount: item.accruedProfit,
+        }));
+
+        rows.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        const tbody = document.getElementById('statementBody');
+        tbody.innerHTML = rows.length ? rows.map((row) => `
+          <tr>
+            <td>${formatDate(row.date)}</td>
+            <td>${row.category}</td>
+            <td>${row.description}</td>
+            <td>${row.status}</td>
+            <td>KES ${formatCurrency(row.amount)}</td>
+          </tr>
+        `).join('') : '<tr><td colspan="5">No records found in the selected date range.</td></tr>';
+      } catch (err) {
+        alert(err.message || 'Failed to load statement');
+      }
+    }
+
+    buildDateDefaults();
+    loadStatement();
+  </script>
+</body>
+</html>

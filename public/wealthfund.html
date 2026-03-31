@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>M1 Finance | Wealth Fund</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .wealth-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .plan-card {
+      overflow: hidden;
+      padding-top: 0;
+    }
+    .plan-image-wrap {
+      margin: -20px -20px 14px;
+      height: 160px;
+      overflow: hidden;
+      border-radius: 16px 16px 0 0;
+      background: #e3f2fd;
+    }
+    .plan-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .plan-card h3 {
+      margin-top: 4px;
+      color: #0d47a1;
+    }
+    .plan-card input {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    .note-box {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #444;
+    }
+    .wealth-status-active {
+      color: #138a4b;
+      font-weight: 700;
+    }
+    .wealth-status-completed {
+      color: #0d47a1;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <header class="top-header">
+    <h1 class="company-name">WEALTH FUND</h1>
+    <p class="user-info">Daily progress reflects after 24 hours; capital and profit roll to your main account at maturity.</p>
+  </header>
+
+  <main class="dashboard-content">
+    <div class="dashboard-card balance-card">
+      <p>Main Account Balance</p>
+      <h2>KES <span id="mainBalance">0.00</span></h2>
+    </div>
+
+    <div class="dashboard-card note-box">
+      <strong>Available Wealth Funds</strong>
+      <ul style="margin-left: 18px; margin-top: 8px;">
+        <li><strong>South Africa Oil</strong> — minimum Ksh 100, earn 5% daily for 10 days.</li>
+        <li><strong>Petrol in Nigeria</strong> — minimum Ksh 100, earn 10% daily for 20 days.</li>
+        <li><strong>Crypto Trading</strong> — minimum Ksh 500, earn 15% daily for 10 days.</li>
+      </ul>
+    </div>
+
+    <div id="plansContainer" class="wealth-grid"></div>
+
+    <div class="dashboard-card">
+      <h3 style="margin-bottom: 10px; color: #0d47a1;">My Wealth Fund History</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Plan</th>
+              <th>Amount</th>
+              <th>Daily Profit</th>
+              <th>Progress</th>
+              <th>Accrued Profit</th>
+              <th>Next Reflection</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="wealthHistoryBody">
+            <tr><td colspan="7">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <div id="bottom-nav"></div>
+  <script src="js/bottomNav.js"></script>
+
+  <script>
+    const token = localStorage.getItem("token");
+    if (!token) window.location.href = "signin.html";
+
+    function formatCurrency(value) {
+      return Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function formatDate(value) {
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString();
+    }
+
+    function makeId(name) {
+      return name.replace(/[^a-z0-9]/gi, "");
+    }
+
+    function getPlanImage(planName) {
+      const imageMap = {
+        "South Africa Oil": "images/south-africa-oil.svg",
+        "Petrol in Nigeria": "images/petrol-nigeria.svg",
+        "Crypto Trading": "images/crypto-trading.svg",
+      };
+
+      return imageMap[planName] || "images/watch1.jpg";
+    }
+
+    function renderPlans(plans) {
+      const container = document.getElementById("plansContainer");
+      container.innerHTML = plans.map((plan) => {
+        const fieldId = `amount-${makeId(plan.name)}`;
+        return `
+          <div class="dashboard-card plan-card">
+            <div class="plan-image-wrap">
+              <img src="${getPlanImage(plan.name)}" alt="${plan.name}" class="plan-image" />
+            </div>
+            <h3>${plan.name}</h3>
+            <p><strong>Minimum:</strong> KES ${formatCurrency(plan.minInvestment)}</p>
+            <p><strong>Daily Rate:</strong> ${(plan.dailyRate * 100).toFixed(0)}%</p>
+            <p><strong>Duration:</strong> ${plan.durationDays} days</p>
+            <p>${plan.description}</p>
+            <input id="${fieldId}" type="number" min="${plan.minInvestment}" placeholder="Enter amount (KES)" />
+            <button type="button" onclick="startInvestment('${plan.name}', ${plan.minInvestment})">Invest Now</button>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function startInvestment(planName, minimum) {
+      const amount = Number(document.getElementById(`amount-${makeId(planName)}`).value);
+      if (!amount || amount < minimum) {
+        alert(`Minimum investment for ${planName} is Ksh ${minimum}.`);
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/wealthfund/invest', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + token,
+          },
+          body: JSON.stringify({ planName, amount }),
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.message || 'Failed to start wealth fund investment');
+        }
+
+        alert(data.message);
+        await loadWealthFundPage();
+      } catch (err) {
+        alert(err.message || 'Failed to start wealth fund investment');
+      }
+    }
+
+    function renderHistory(history) {
+      const tbody = document.getElementById('wealthHistoryBody');
+      if (!history.length) {
+        tbody.innerHTML = '<tr><td colspan="7">No wealth fund investments yet.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = history.map((item) => `
+        <tr>
+          <td>${item.planName}</td>
+          <td>KES ${formatCurrency(item.amount)}</td>
+          <td>KES ${formatCurrency(item.dailyProfit)}</td>
+          <td>${item.daysElapsed || 0}/${item.durationDays}</td>
+          <td>KES ${formatCurrency(item.accruedProfit)}</td>
+          <td>${formatDate(item.nextReflectionAt)}</td>
+          <td class="${item.status === 'Completed' ? 'wealth-status-completed' : 'wealth-status-active'}">${item.status}</td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadWealthFundPage() {
+      try {
+        const [profileRes, plansRes, historyRes] = await Promise.all([
+          fetch('/api/user/profile', { headers: { Authorization: 'Bearer ' + token } }),
+          fetch('/api/wealthfund/plans', { headers: { Authorization: 'Bearer ' + token } }),
+          fetch('/api/wealthfund/history', { headers: { Authorization: 'Bearer ' + token } }),
+        ]);
+
+        if (profileRes.status === 401 || plansRes.status === 401 || historyRes.status === 401) {
+          localStorage.removeItem('token');
+          window.location.href = 'signin.html';
+          return;
+        }
+
+        const profile = await profileRes.json();
+        const plans = await plansRes.json();
+        const history = await historyRes.json();
+
+        document.getElementById('mainBalance').textContent = formatCurrency(profile.balance);
+        renderPlans(plans || []);
+        renderHistory(history || []);
+      } catch (err) {
+        console.error(err);
+        alert('Failed to load wealth fund page.');
+      }
+    }
+
+    loadWealthFundPage();
+  </script>
+</body>
+</html>

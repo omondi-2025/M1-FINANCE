@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>M1 Finance | Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .whatsapp-help,
+    .notification-bell {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      color: #fff;
+      border-radius: 50%;
+      text-decoration: none;
+      font-size: 22px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+      border: none;
+      cursor: pointer;
+    }
+    .whatsapp-help { background: #22c55e; }
+    .notification-bell {
+      background: #f59e0b;
+      position: relative;
+    }
+    .notification-count {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      min-width: 18px;
+      height: 18px;
+      background: #dc2626;
+      color: #fff;
+      border-radius: 999px;
+      font-size: 11px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+    }
+    .notification-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 9999;
+    }
+    .notification-modal.show { display: flex; }
+    .notification-card {
+      width: min(100%, 440px);
+      background: #fff;
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+    }
+    .notification-item {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-top: 10px;
+    }
+    .notification-item p { margin: 4px 0; }
+    .notification-meta {
+      font-size: 12px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <header class="top-header">
+    <div class="header-row">
+      <div>
+        <h1 class="company-name">M1 FINANCE</h1>
+        <p class="user-info">
+          <i class="fa fa-user"></i>
+          <span id="fullName">Loading...</span>
+          &nbsp; | &nbsp;
+          <i class="fa fa-phone"></i>
+          <span id="phone">Loading...</span>
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <button id="notificationBell" class="notification-bell" type="button" title="View company notifications">
+          <i class="fa fa-bell"></i>
+          <span id="notificationCount" class="notification-count">0</span>
+        </button>
+        <a id="whatsAppHelp" class="whatsapp-help" href="#" target="_blank" title="Chat on WhatsApp">
+          <i class="fab fa-whatsapp"></i>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <div id="notificationModal" class="notification-modal">
+    <div class="notification-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+        <h3 style="color:#0d47a1;">Company Notifications</h3>
+        <button type="button" onclick="closeNotifications()" style="width:auto;margin-top:0;padding:6px 10px;">Close</button>
+      </div>
+      <div id="notificationList"><p class="notification-meta">No active notifications right now.</p></div>
+    </div>
+  </div>
+
+  <main class="dashboard-content">
+    <div class="dashboard-card balance-card">
+      <p>Account Balance</p>
+      <h2>KES <span id="balance">0.00</span></h2>
+    </div>
+
+    <div class="stats-grid">
+      <div class="dashboard-card stat-box">
+        <p>Cashouts</p>
+        <h3>KES <span id="cashouts">0</span></h3>
+      </div>
+
+      <div class="dashboard-card stat-box">
+        <p>Daily Income</p>
+        <h3>KES <span id="dailyIncome">0</span></h3>
+      </div>
+
+      <div class="dashboard-card stat-box">
+        <p>Weekly Earnings</p>
+        <h3>KES <span id="weeklyEarnings">0</span></h3>
+      </div>
+
+      <div class="dashboard-card stat-box">
+        <p>Monthly Earnings</p>
+        <h3>KES <span id="monthlyEarnings">0</span></h3>
+      </div>
+
+      <div class="dashboard-card stat-box">
+        <p>Referral Earnings</p>
+        <h3>KES <span id="referralEarnings">0</span></h3>
+      </div>
+
+      <div class="dashboard-card stat-box">
+        <p>Total Income</p>
+        <h3>KES <span id="totalIncome">0</span></h3>
+      </div>
+    </div>
+
+    <div class="action-buttons">
+      <button id="rechargeBtn" class="action-btn recharge-btn" type="button">
+        <i class="fa fa-wallet"></i> Recharge
+      </button>
+
+      <button id="withdrawBtn" class="action-btn withdraw-btn" type="button">
+        <i class="fa fa-money-bill-wave"></i> Withdraw
+      </button>
+    </div>
+
+    <p id="errorMsg" style="color:red; text-align:center; display:none;">
+      Failed to load dashboard data.
+    </p>
+  </main>
+
+  <nav class="bottom-nav">
+    <a href="index.html" class="active"><i class="fa fa-house"></i> Home</a>
+    <a href="level.html"><i class="fa fa-layer-group"></i> Level</a>
+    <a href="history.html"><i class="fa fa-clock-rotate-left"></i> History</a>
+    <a href="team.html"><i class="fa fa-users"></i> Team</a>
+    <a href="profile.html"><i class="fa fa-user"></i> Profile</a>
+  </nav>
+
+  <script>
+    const token = localStorage.getItem("token");
+    if (!token) window.location.href = "signin.html";
+
+    function formatCurrency(value) {
+      return Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function getGreeting() {
+      const hour = new Date().getHours();
+      if (hour < 12) return "Good morning";
+      if (hour < 17) return "Good afternoon";
+      return "Good evening";
+    }
+
+    function updateWhatsappLink(referralCode, phone) {
+      const message = `${getGreeting()} sir/Madam. M1 Finance Account Code ${referralCode || "N/A"}. phone Number ${phone || "N/A"}. im requesting for assistance.`;
+      document.getElementById("whatsAppHelp").href = `https://wa.me/254102188852?text=${encodeURIComponent(message)}`;
+    }
+
+    function closeNotifications() {
+      document.getElementById("notificationModal").classList.remove("show");
+    }
+
+    function renderNotifications(notifications) {
+      const list = document.getElementById("notificationList");
+      const count = document.getElementById("notificationCount");
+
+      if (!notifications.length) {
+        list.innerHTML = `<p class="notification-meta">No active notifications right now.</p>`;
+        count.style.display = "none";
+        return;
+      }
+
+      count.textContent = notifications.length;
+      count.style.display = "inline-flex";
+      list.innerHTML = notifications.map((item) => `
+        <div class="notification-item">
+          <p><strong>${item.title}</strong></p>
+          <p>${item.description}</p>
+          <p class="notification-meta">Visible until ${new Date(item.expiresAt).toLocaleString()}</p>
+        </div>
+      `).join("");
+      document.getElementById("notificationModal").classList.add("show");
+    }
+
+    async function loadNotifications() {
+      try {
+        const res = await fetch("/api/user/notifications", {
+          headers: { Authorization: "Bearer " + token }
+        });
+
+        if (res.status === 401) {
+          localStorage.removeItem("token");
+          window.location.href = "signin.html";
+          return;
+        }
+
+        const notifications = await res.json();
+        renderNotifications(Array.isArray(notifications) ? notifications : []);
+      } catch (err) {
+        console.error("Notification fetch failed:", err);
+      }
+    }
+
+    async function loadDashboard() {
+      try {
+        const res = await fetch("/api/user/dashboard", {
+          headers: { Authorization: "Bearer " + token }
+        });
+
+        if (res.status === 401) {
+          localStorage.removeItem("token");
+          window.location.href = "signin.html";
+          return;
+        }
+
+        const data = await res.json();
+        if (!data) return;
+
+        document.getElementById("fullName").textContent = data.fullName || "-";
+        document.getElementById("phone").textContent = data.phone || "-";
+        document.getElementById("balance").textContent = formatCurrency(data.balance);
+        document.getElementById("cashouts").textContent = formatCurrency(data.cashouts);
+        document.getElementById("dailyIncome").textContent = formatCurrency(data.dailyIncome);
+        document.getElementById("weeklyEarnings").textContent = formatCurrency(data.weeklyEarnings);
+        document.getElementById("monthlyEarnings").textContent = formatCurrency(data.monthlyEarnings);
+        document.getElementById("referralEarnings").textContent = formatCurrency(data.referralEarnings);
+        document.getElementById("totalIncome").textContent = formatCurrency(data.totalIncome);
+        updateWhatsappLink(data.referralCode, data.phone);
+
+        document.getElementById("errorMsg").style.display = "none";
+      } catch (err) {
+        console.error("Dashboard fetch failed:", err);
+        document.getElementById("errorMsg").style.display = "block";
+      }
+    }
+
+    loadDashboard();
+    loadNotifications();
+    setInterval(loadDashboard, 60000);
+    setInterval(loadNotifications, 60000);
+
+    document.getElementById("notificationBell").onclick = () => {
+      const modal = document.getElementById("notificationModal");
+      modal.classList.toggle("show");
+    };
+
+    document.getElementById("rechargeBtn").onclick = () => {
+      window.location.href = "recharge.html";
+    };
+    document.getElementById("withdrawBtn").onclick = () => {
+      window.location.href = "withdrawal.html";
+    };
+  </script>
+  <script src="js/bottomNav.js"></script>
+</body>
+</html>

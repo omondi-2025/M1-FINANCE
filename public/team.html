@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>M1 Finance | My Team</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body>
+
+<header class="top-header">
+  <h1 class="company-name">MY M1 FINANCE TEAM</h1>
+</header>
+
+<main class="dashboard-content">
+
+  <!-- REFERRAL INFO -->
+  <div class="dashboard-card">
+    <p><strong>Your personal referral link</strong></p>
+    <p>Earn commissions only after your referrals invest.</p>
+
+    <div class="readonly-box">
+      <input id="refCode" readonly>
+      <button class="copy-btn" onclick="copyText('refCode')">
+        <i class="fa fa-copy"></i>
+      </button>
+    </div>
+
+    <div class="readonly-box">
+      <input id="refLink" readonly>
+      <button class="copy-btn" onclick="copyText('refLink')">
+        <i class="fa fa-link"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="dashboard-card stats-grid">
+    <div class="stat-box">
+      <p>Total Referral Earnings (KES)</p>
+      <h3>KES <span id="totalEarnings">0</span></h3>
+    </div>
+
+    <div class="stat-box">
+      <p>Total Members</p>
+      <h3><span id="totalMembers">0</span></h3>
+    </div>
+  </div>
+
+  <!-- TEAM TABLE -->
+  <div class="dashboard-card">
+    <p class="team-title">My Referrals</p>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Invested Amount</th>
+            <th>Level</th>
+            <th>Status</th>
+            <th>Commission</th>
+            <th>Date Joined</th>
+          </tr>
+        </thead>
+        <tbody id="teamTable">
+          <tr><td colspan="6">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- COMMISSION RULES -->
+  <div class="dashboard-card">
+    <strong>⚠️ Commission Requirements</strong>
+    <ul class="warning-list">
+      <li>Active means the user has invested in at least one package.</li>
+      <li>Commission is only calculated from invested packages.</li>
+      <li>Earn 10% from Level 1 referrals.</li>
+      <li>Earn 5% from Level 2 referrals.</li>
+      <li>Earn 1% from Level 3 referrals.</li>
+    </ul>
+  </div>
+
+  <!-- QUICK ACTIONS -->
+  <div class="dashboard-card quick-actions">
+    <strong>Quick Actions</strong>
+
+    <button class="action-btn recharge-btn" onclick="copyText('refLink')">
+      <i class="fa fa-copy"></i> Copy Referral Link
+    </button>
+
+    <button class="action-btn withdraw-btn" onclick="shareWhatsApp()">
+      <i class="fa fa-whatsapp"></i> Share on WhatsApp
+    </button>
+  </div>
+
+</main>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <a href="index.html"><i class="fa fa-house"></i>Home</a>
+  <a href="level.html"><i class="fa fa-layer-group"></i>Level</a>
+  <a href="history.html"><i class="fa fa-clock-rotate-left"></i>History</a>
+  <a href="team.html" class="active"><i class="fa fa-users"></i>Team</a>
+  <a href="profile.html"><i class="fa fa-user"></i>Profile</a>
+</nav>
+
+<script>
+  const token = localStorage.getItem("token");
+  if (!token) window.location.href = "signin.html";
+
+  function copyText(id) {
+    const input = document.getElementById(id);
+    input.select();
+    document.execCommand("copy");
+
+    const toast = document.createElement("div");
+    toast.textContent = "Copied!";
+    toast.className = "toast";
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
+  }
+
+  function shareWhatsApp() {
+    const link = document.getElementById("refLink").value;
+    window.open(`https://wa.me/?text=Join%20M1%20Finance%20using%20my%20link:%20${link}`);
+  }
+
+  async function loadTeam() {
+    try {
+      const res = await fetch("/api/user/team", {
+        headers: { Authorization: "Bearer " + token }
+      });
+      if (!res.ok) throw new Error("Failed to load team data");
+
+      const data = await res.json();
+      const baseUrl = window.location.origin;
+
+      // REFERRAL INFO
+      document.getElementById("refCode").value = data.referralCode;
+      document.getElementById("refLink").value =
+        `${baseUrl}/signup.html?ref=${data.referralCode}`;
+
+      document.getElementById("totalEarnings").textContent = data.totalEarnings || 0;
+      document.getElementById("totalMembers").textContent = data.members.length;
+
+      const tbody = document.getElementById("teamTable");
+      tbody.innerHTML = "";
+
+      if (!data.members.length) {
+        tbody.innerHTML =
+          `<tr><td colspan="6" style="text-align:center;color:#888;">No referrals yet</td></tr>`;
+        return;
+      }
+
+      data.members.forEach(m => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${m.name}</td>
+            <td>KES ${m.totalInvested || 0}</td>
+            <td>${m.level}</td>
+            <td class="${m.active ? "status-active" : "status-inactive"}">
+              ${m.active ? "Active" : "Inactive"}
+            </td>
+            <td>KES ${m.commission || 0}</td>
+            <td>${new Date(m.joinedAt).toLocaleString()}</td>
+          </tr>`;
+      });
+
+    } catch (err) {
+      console.error(err);
+      document.getElementById("teamTable").innerHTML =
+        `<tr><td colspan="6" style="text-align:center;color:red;">Error loading team data</td></tr>`;
+    }
+  }
+
+  // Initial load
+  loadTeam();
+
+  // Auto-refresh every 60 seconds
+  setInterval(loadTeam, 60000);
+</script>
+<script src="js/bottomNav.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>M1 Finance | Profile</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0d47a1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="images/watch1.jpg" />
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+  />
+  <link rel="stylesheet" href="css/style.css" />
+
+  <style>
+    .text-center { text-align: center; }
+    .profile-icon {
+      font-size: 64px;
+      color: #0d47a1;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .muted {
+      color: #666;
+      margin-top: 4px;
+      word-break: break-word;
+    }
+    .action-list {
+      display: grid;
+      gap: 10px;
+    }
+    .list-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: flex-start;
+      background: #fff;
+      color: #0d47a1;
+      border: 1px solid #dbeafe;
+    }
+    .logout-btn {
+      background: #fff5f5;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+    .claim-btn {
+      background: #138a4b;
+    }
+    .install-btn {
+      background: #0d47a1;
+    }
+    .claim-btn:disabled,
+    .install-btn:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+    .install-note {
+      font-size: 14px;
+      color: #444;
+      line-height: 1.5;
+    }
+    .bonus-status {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #0d47a1;
+    }
+  </style>
+</head>
+
+<body>
+  <header class="top-header">
+    <h2>My Profile</h2>
+  </header>
+
+  <main class="dashboard-content">
+    <div class="dashboard-card profile-card text-center">
+      <div class="profile-icon">
+        <i class="fa-solid fa-circle-user"></i>
+      </div>
+
+      <h3 id="profileName">Loading...</h3>
+      <p id="profilePhone" class="muted"></p>
+      <p id="profileEmail" class="muted"></p>
+
+      <div class="readonly-box" style="margin-top: 12px;">
+        <input id="profileReferral" readonly />
+        <button class="copy-btn" onclick="copyReferral()" type="button">
+          <i class="fa fa-copy"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="dashboard-card">
+      <h3 style="margin-bottom: 8px; color: #138a4b;">🎁 New User Welcome Bonus</h3>
+      <p style="font-size: 14px; color: #444; line-height: 1.5;">
+        First-time registered users can claim <strong>KES 100</strong> instantly once only.
+      </p>
+      <button id="claimBonusBtn" class="claim-btn" type="button" onclick="claimWelcomeBonus()">
+        Claim Ksh 100 Now
+      </button>
+      <p id="bonusStatus" class="bonus-status"></p>
+    </div>
+
+    <div class="dashboard-card">
+      <h3 style="margin-bottom: 8px; color: #0d47a1;">📲 Download M1 App</h3>
+      <p class="install-note">
+        Install the full M1 Finance web app on your Android or iPhone for quick access from your home screen.
+      </p>
+      <button id="downloadAppBtn" class="install-btn" type="button" onclick="installM1App()">
+        Download App
+      </button>
+      <p id="installStatus" class="bonus-status">Preparing app install options for this device...</p>
+    </div>
+
+    <div class="dashboard-card stats-grid">
+      <div class="stat-box">
+        <p>Account Balance</p>
+        <h3>KES <span id="balance">0</span></h3>
+      </div>
+
+      <div class="stat-box">
+        <p>Total Cashouts</p>
+        <h3>KES <span id="cashouts">0</span></h3>
+      </div>
+
+      <div class="stat-box">
+        <p>Total Recharged</p>
+        <h3>KES <span id="recharged">0</span></h3>
+      </div>
+
+      <div class="stat-box">
+        <p>Total Earnings</p>
+        <h3>KES <span id="earnings">0</span></h3>
+      </div>
+    </div>
+
+    <div class="dashboard-card action-list">
+      <button class="list-btn" type="button" onclick="window.location.href='wealthfund.html'">
+        <i class="fa fa-coins"></i><span>Wealth Fund</span>
+      </button>
+      <button class="list-btn" type="button" onclick="window.location.href='personalinformation.html'">
+        <i class="fa fa-id-card"></i><span>Personal Information</span>
+      </button>
+      <button class="list-btn" type="button" onclick="window.location.href='financialstatement.html'">
+        <i class="fa fa-file-pdf"></i><span>Financial Statement</span>
+      </button>
+      <button class="list-btn" type="button" onclick="window.location.href='support.html'">
+        <i class="fa fa-headset"></i><span>Support</span>
+      </button>
+      <button class="list-btn" type="button" onclick="window.location.href='history.html'">
+        <i class="fa fa-clock-rotate-left"></i><span>Open History</span>
+      </button>
+      <button class="list-btn" type="button" onclick="window.location.href='recharge.html'">
+        <i class="fa fa-wallet"></i><span>Recharge Account</span>
+      </button>
+      <button class="list-btn" type="button" onclick="window.location.href='withdrawal.html'">
+        <i class="fa fa-money-bill-wave"></i><span>Request Withdrawal</span>
+      </button>
+      <button class="list-btn logout-btn" onclick="logout()" type="button">
+        <i class="fa fa-right-from-bracket"></i><span>Log Out</span>
+      </button>
+    </div>
+  </main>
+
+  <div id="bottom-nav"></div>
+  <script src="js/bottomNav.js"></script>
+
+  <div id="loadingOverlay" class="loading-overlay hidden">
+    <div class="spinner"></div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem("token");
+    if (!token) {
+      window.location.replace("signin.html");
+    }
+
+    const loadingOverlay = document.getElementById("loadingOverlay");
+    const showLoader = () => loadingOverlay.classList.remove("hidden");
+    const hideLoader = () => loadingOverlay.classList.add("hidden");
+
+    function formatCurrency(value) {
+      return Number(value || 0).toLocaleString();
+    }
+
+    let installPromptEvent = null;
+
+    function isIosDevice() {
+      return /iPad|iPhone|iPod/i.test(navigator.userAgent);
+    }
+
+    function isStandaloneApp() {
+      return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+    }
+
+    function updateInstallButtonState(message = "") {
+      const btn = document.getElementById("downloadAppBtn");
+      const status = document.getElementById("installStatus");
+      if (!btn || !status) return;
+
+      if (isStandaloneApp()) {
+        btn.disabled = true;
+        btn.textContent = "App Installed";
+        status.textContent = "M1 Finance is already installed on this device.";
+        return;
+      }
+
+      btn.disabled = false;
+      btn.textContent = "Download App";
+
+      if (message) {
+        status.textContent = message;
+        return;
+      }
+
+      if (isIosDevice()) {
+        status.textContent = "On iPhone or iPad, tap Share and choose 'Add to Home Screen'.";
+        return;
+      }
+
+      if (installPromptEvent) {
+        status.textContent = "Tap the button above to install the app on this phone.";
+        return;
+      }
+
+      status.textContent = "Open this site in Chrome or Safari and use 'Add to Home Screen' if the install prompt does not appear automatically.";
+    }
+
+    async function installM1App() {
+      if (isStandaloneApp()) {
+        updateInstallButtonState();
+        return;
+      }
+
+      if (isIosDevice()) {
+        const iosMessage = "For iPhone or iPad, open this page in Safari, tap the Share icon, then select 'Add to Home Screen'.";
+        alert(iosMessage);
+        updateInstallButtonState(iosMessage);
+        return;
+      }
+
+      installPromptEvent = installPromptEvent || window.deferredM1InstallPrompt || null;
+      if (!installPromptEvent) {
+        const fallbackMessage = "Install is not ready yet on this device. Open this site in Chrome and use 'Add to Home Screen'.";
+        alert(fallbackMessage);
+        updateInstallButtonState(fallbackMessage);
+        return;
+      }
+
+      installPromptEvent.prompt();
+      const choice = await installPromptEvent.userChoice;
+
+      if (choice && choice.outcome === "accepted") {
+        updateInstallButtonState("App installation started successfully.");
+      } else {
+        updateInstallButtonState("Install was cancelled. You can try again anytime.");
+      }
+
+      installPromptEvent = null;
+      window.deferredM1InstallPrompt = null;
+    }
+
+    window.addEventListener("m1-install-available", () => {
+      installPromptEvent = window.deferredM1InstallPrompt || null;
+      updateInstallButtonState("Tap the button above to install the app on this phone.");
+    });
+
+    window.addEventListener("m1-app-installed", () => {
+      installPromptEvent = null;
+      updateInstallButtonState("M1 Finance has been installed successfully.");
+    });
+
+    function logout() {
+      localStorage.removeItem("token");
+      window.location.replace("signin.html");
+    }
+
+    async function copyReferral() {
+      const input = document.getElementById("profileReferral");
+      if (!input.value) return;
+      await navigator.clipboard.writeText(input.value);
+      alert("Referral code copied");
+    }
+
+    function updateBonusState(claimed, claimedAt) {
+      const btn = document.getElementById("claimBonusBtn");
+      const status = document.getElementById("bonusStatus");
+
+      if (claimed) {
+        btn.disabled = true;
+        btn.textContent = "Bonus Already Claimed";
+        status.textContent = claimedAt
+          ? `Claimed on ${new Date(claimedAt).toLocaleString()}`
+          : "Bonus already claimed.";
+      } else {
+        btn.disabled = false;
+        btn.textContent = "Claim Ksh 100 Now";
+        status.textContent = "You can claim this bonus once on this account.";
+      }
+    }
+
+    async function claimWelcomeBonus() {
+      const btn = document.getElementById("claimBonusBtn");
+      btn.disabled = true;
+      btn.textContent = "Claiming...";
+
+      try {
+        const res = await fetch("/api/user/claim-welcome-bonus", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.message || "Failed to claim bonus");
+        }
+
+        alert(data.message);
+        document.getElementById("balance").textContent = formatCurrency(data.balance);
+        updateBonusState(true, data.claimedAt);
+        await loadProfile();
+      } catch (err) {
+        alert(err.message || "Failed to claim bonus");
+        btn.disabled = false;
+        btn.textContent = "Claim Ksh 100 Now";
+      }
+    }
+
+    async function loadProfile() {
+      showLoader();
+
+      try {
+        const res = await fetch("/api/user/profile", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (res.status === 401) {
+          logout();
+          return;
+        }
+
+        if (!res.ok) {
+          throw new Error("Failed to load profile");
+        }
+
+        const data = await res.json();
+
+        document.getElementById("profileName").textContent = data.fullName || "-";
+        document.getElementById("profilePhone").textContent = data.phone || "-";
+        document.getElementById("profileEmail").textContent = data.email || "-";
+        document.getElementById("profileReferral").value = data.referralCode || "";
+
+        document.getElementById("balance").textContent = formatCurrency(data.balance);
+        document.getElementById("cashouts").textContent = formatCurrency(data.totalCashouts);
+        document.getElementById("recharged").textContent = formatCurrency(data.totalRecharged);
+        document.getElementById("earnings").textContent = formatCurrency(data.totalEarnings);
+
+        updateBonusState(data.welcomeBonusClaimed, data.welcomeBonusClaimedAt);
+      } catch (err) {
+        console.error("Profile load failed:", err);
+        alert("Failed to load profile information.");
+      } finally {
+        hideLoader();
+      }
+    }
+
+    installPromptEvent = window.deferredM1InstallPrompt || null;
+    updateInstallButtonState();
+    loadProfile();
+  </script>
+</body>
+</html>

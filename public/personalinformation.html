@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>M1 Finance | Personal Information</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="top-header">
+    <h1 class="company-name">PERSONAL INFORMATION</h1>
+    <p class="user-info">Update your email, phone number or change your password securely.</p>
+  </header>
+
+  <main class="dashboard-content">
+    <div class="dashboard-card">
+      <form id="personalInfoForm" style="width: 100%; box-shadow: none; padding: 0;">
+        <div class="input-group">
+          <i class="fa fa-envelope"></i>
+          <input type="email" id="email" placeholder="Email address" required />
+        </div>
+
+        <div class="input-group">
+          <i class="fa fa-phone"></i>
+          <input type="tel" id="phone" placeholder="Phone number" required />
+        </div>
+
+        <p style="text-align:left; margin: 16px 0 8px; color:#0d47a1;"><strong>Change Password</strong> (optional)</p>
+
+        <div class="input-group">
+          <i class="fa fa-lock"></i>
+          <input type="password" id="currentPassword" placeholder="Current password" />
+        </div>
+
+        <div class="input-group">
+          <i class="fa fa-key"></i>
+          <input type="password" id="newPassword" placeholder="New password" />
+        </div>
+
+        <div class="input-group">
+          <i class="fa fa-check"></i>
+          <input type="password" id="confirmPassword" placeholder="Confirm new password" />
+        </div>
+
+        <button type="submit">Save Changes</button>
+      </form>
+    </div>
+  </main>
+
+  <div id="bottom-nav"></div>
+  <script src="js/bottomNav.js"></script>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = 'signin.html';
+
+    async function loadProfile() {
+      const res = await fetch('/api/user/profile', {
+        headers: { Authorization: 'Bearer ' + token },
+      });
+
+      if (res.status === 401) {
+        localStorage.removeItem('token');
+        window.location.href = 'signin.html';
+        return;
+      }
+
+      const data = await res.json();
+      document.getElementById('email').value = data.email || '';
+      document.getElementById('phone').value = data.phone || '';
+    }
+
+    document.getElementById('personalInfoForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      try {
+        const res = await fetch('/api/user/personal-information', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer ' + token,
+          },
+          body: JSON.stringify({
+            email: document.getElementById('email').value.trim(),
+            phone: document.getElementById('phone').value.trim(),
+            currentPassword: document.getElementById('currentPassword').value,
+            newPassword: document.getElementById('newPassword').value,
+            confirmPassword: document.getElementById('confirmPassword').value,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.message || 'Failed to update personal information');
+        }
+
+        alert(data.message);
+        if (data.user) {
+          const existing = JSON.parse(localStorage.getItem('user') || '{}');
+          localStorage.setItem('user', JSON.stringify({ ...existing, ...data.user }));
+        }
+        document.getElementById('currentPassword').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmPassword').value = '';
+      } catch (err) {
+        alert(err.message || 'Failed to update personal information');
+      }
+    });
+
+    loadProfile();
+  </script>
+</body>
+</html>

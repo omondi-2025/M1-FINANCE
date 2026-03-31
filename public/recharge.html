@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>M1 Finance | Recharge</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .step-panel { display: none; }
+    .active-panel { display: block; }
+    .recharge-card {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #2563eb;
+      border: none;
+      color: #fff;
+      border-radius: 8px;
+      margin-top: 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover { background: #1d4ed8; }
+    button:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+    }
+    #timer {
+      font-size: 20px;
+      font-weight: bold;
+      color: red;
+      text-align: center;
+      margin-top: 10px;
+    }
+    .summary-box {
+      background: #f3f4f6;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 15px;
+    }
+    .copy-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin: 10px 0;
+    }
+    .copy-row input {
+      margin-top: 0;
+      background: #f8fafc;
+      font-weight: 700;
+    }
+    .copy-row button {
+      width: auto;
+      margin-top: 0;
+      white-space: nowrap;
+    }
+    #statusBox {
+      margin-top: 10px;
+      color: #0d47a1;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+<header class="top-header">
+  <h1 class="company-name">M1 FINANCE</h1>
+</header>
+
+<main class="dashboard-content">
+  <div class="dashboard-card recharge-card">
+    <div id="step1" class="step-panel active-panel">
+      <h2>Recharge</h2>
+
+      <label>Full Name</label>
+      <input type="text" id="fullName" placeholder="Your full name" required>
+
+      <label>Phone Number</label>
+      <input type="text" id="phone" placeholder="0712345678" required>
+
+      <label>Amount (Minimum Ksh 50)</label>
+      <input type="number" id="amount" min="50" placeholder="Enter amount">
+
+      <button id="step1Btn" onclick="goToStep2()" type="button">Next</button>
+      <p id="statusBox"></p>
+    </div>
+
+    <div id="step2" class="step-panel">
+      <h2>Your Recharge Code</h2>
+      <h3 id="rechargeCode" style="text-align:center; color:#2563eb"></h3>
+
+      <p><strong>Send money manually via M-Pesa:</strong></p>
+      <div class="copy-row">
+        <input id="payNumber" type="text" value="0102188852" readonly>
+        <button type="button" onclick="copyPayNumber()"><i class="fa fa-copy"></i> Copy Number</button>
+      </div>
+      <ul>
+        <li>Go to SIM Toolkit or Dial *334#</li>
+        <li>Open M-PESA</li>
+        <li>Select "Send Money"</li>
+        <li>Paste the copied number above</li>
+        <li>Enter the exact amount you selected</li>
+        <li>Confirm and send within 5 minutes</li>
+      </ul>
+
+      <p id="timer">5:00</p>
+      <button onclick="goToStep3()" type="button">Next</button>
+    </div>
+
+    <div id="step3" class="step-panel">
+      <h2>Paste M-PESA Message</h2>
+      <textarea id="mpesaMessage" rows="5" placeholder="Paste the M-PESA SMS here"></textarea>
+
+      <button onclick="goToStep4()" type="button">Next</button>
+    </div>
+
+    <div id="step4" class="step-panel">
+      <h2>Confirm & Submit</h2>
+
+      <div class="summary-box">
+        <p><strong>Full Name:</strong> <span id="s_name"></span></p>
+        <p><strong>Phone:</strong> <span id="s_phone"></span></p>
+        <p><strong>Email:</strong> <span id="s_email"></span></p>
+        <p><strong>User Referral Code:</strong> <span id="s_referral"></span></p>
+        <p><strong>Amount:</strong> KES <span id="s_amount"></span></p>
+        <p><strong>Unique System Code:</strong> <span id="s_code"></span></p>
+        <p><strong>Transaction Message:</strong></p>
+        <p id="s_message" style="white-space:pre-wrap;"></p>
+      </div>
+
+      <button id="sendConfirmationBtn" onclick="submitRecharge()" type="button">Send for Confirmation</button>
+    </div>
+  </div>
+</main>
+
+<div id="bottom-nav"></div>
+<script src="js/bottomNav.js"></script>
+
+<script>
+const token = localStorage.getItem("token");
+if (!token) window.location.href = "signin.html";
+
+let generatedCode = "";
+let rechargeId = "";
+let userEmail = "";
+let userReferralCode = "";
+let hasSubmittedConfirmation = false;
+let countdownInterval = null;
+let timeLeft = 300;
+
+function setStatus(message, isError = false) {
+  const box = document.getElementById("statusBox");
+  box.textContent = message;
+  box.style.color = isError ? "#b91c1c" : "#0d47a1";
+}
+
+function isFullMpesaMessage(message) {
+  const text = String(message || "").replace(/\s+/g, " ").trim();
+  return text.length >= 40
+    && /\b(?:Confirmed|confirmed)\b/.test(text)
+    && /\b(?:Ksh|KES)\s?[\d,.]+/i.test(text)
+    && /\b(?:balance|M-PESA|transaction cost)\b/i.test(text)
+    && /\b[A-Z0-9]{8,12}\b/.test(text);
+}
+
+function copyPayNumber() {
+  const input = document.getElementById("payNumber");
+  input.select();
+  input.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(input.value);
+  alert("Payment number copied successfully.");
+}
+
+function showPanel(id) {
+  document.querySelectorAll(".step-panel").forEach((panel) => panel.classList.remove("active-panel"));
+  document.getElementById(id).classList.add("active-panel");
+}
+
+async function goToStep2() {
+  const name = document.getElementById("fullName").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+  const amount = Number(document.getElementById("amount").value);
+  const button = document.getElementById("step1Btn");
+
+  if (!name || !phone || amount < 50) {
+    setStatus("Please fill all fields correctly.", true);
+    return;
+  }
+
+  try {
+    button.disabled = true;
+    button.textContent = "Creating...";
+
+    const res = await fetch("/api/recharge/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token,
+      },
+      body: JSON.stringify({ fullName: name, phone, amount }),
+    });
+
+    const result = await res.json();
+    if (!res.ok || !result.success) {
+      throw new Error(result.message || "Failed to create recharge request");
+    }
+
+    rechargeId = result.rechargeId;
+    generatedCode = result.code;
+    userEmail = result.email || "";
+    userReferralCode = result.referralCode || "";
+    document.getElementById("rechargeCode").textContent = generatedCode;
+
+    setStatus("");
+    startCountdown();
+    showPanel("step2");
+  } catch (err) {
+    setStatus(err.message || "Unable to start recharge.", true);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Next";
+  }
+}
+
+function startCountdown() {
+  timeLeft = 300;
+  clearInterval(countdownInterval);
+
+  countdownInterval = setInterval(() => {
+    const min = Math.floor(timeLeft / 60);
+    const sec = timeLeft % 60;
+    document.getElementById("timer").textContent = `${min}:${sec < 10 ? "0" + sec : sec}`;
+
+    if (timeLeft <= 0) {
+      clearInterval(countdownInterval);
+      alert("Time expired. Please restart the recharge process.");
+      location.reload();
+      return;
+    }
+
+    timeLeft--;
+  }, 1000);
+}
+
+function goToStep3() {
+  clearInterval(countdownInterval);
+  showPanel("step3");
+}
+
+function goToStep4() {
+  const msg = document.getElementById("mpesaMessage").value.trim();
+  if (!isFullMpesaMessage(msg)) {
+    alert("Please paste the full complete M-PESA transaction message including code, amount and balance.");
+    return;
+  }
+
+  document.getElementById("s_name").textContent = document.getElementById("fullName").value;
+  document.getElementById("s_phone").textContent = document.getElementById("phone").value;
+  document.getElementById("s_email").textContent = userEmail || "N/A";
+  document.getElementById("s_referral").textContent = userReferralCode || "N/A";
+  document.getElementById("s_amount").textContent = document.getElementById("amount").value;
+  document.getElementById("s_code").textContent = generatedCode;
+  document.getElementById("s_message").textContent = msg;
+
+  showPanel("step4");
+}
+
+async function submitRecharge() {
+  const sendBtn = document.getElementById("sendConfirmationBtn");
+
+  if (!rechargeId) {
+    alert("Start the recharge process first.");
+    return;
+  }
+
+  if (hasSubmittedConfirmation) {
+    sendBtn.disabled = true;
+    sendBtn.textContent = "Already Sent for Confirmation";
+    return;
+  }
+
+  try {
+    sendBtn.disabled = true;
+    sendBtn.textContent = "Sending...";
+
+    const res = await fetch("/api/recharge/submit-message", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token,
+      },
+      body: JSON.stringify({
+        rechargeId,
+        transactionMessage: document.getElementById("mpesaMessage").value.trim(),
+      }),
+    });
+
+    const result = await res.json();
+    if (!res.ok || !result.success) {
+      throw new Error(result.message || "Recharge submission failed.");
+    }
+
+    hasSubmittedConfirmation = true;
+    sendBtn.textContent = "Already Sent for Confirmation";
+    alert("Recharge document sent successfully for confirmation and is now waiting for admin approval.");
+    window.location.href = "history.html";
+  } catch (err) {
+    const message = err.message || "Error submitting recharge.";
+    if (/already been sent/i.test(message)) {
+      hasSubmittedConfirmation = true;
+      sendBtn.disabled = true;
+      sendBtn.textContent = "Already Sent for Confirmation";
+    } else {
+      sendBtn.disabled = false;
+      sendBtn.textContent = "Send for Confirmation";
+    }
+    alert(message);
+  }
+}
+</script>
+</body>
+</html>
