@@ -67,6 +67,7 @@
     <li>Withdrawals are processed between <strong>6:00 AM and 7:00 PM</strong>.</li>
     <li>Your phone number is automatically loaded from your account and cannot be changed.</li>
     <li>Please ensure your account balance is sufficient before submitting a withdrawal request.</li>
+    <li>Deposited/recharged funds remain locked for withdrawal until you invest in a package plan from <strong>Starter</strong> upwards.</li>
     <li>Withdrawals may take a short time to be processed depending on network conditions.</li>
   </ul>
 </div>
@@ -91,14 +92,7 @@
     </tbody>
   </table>
 </div>
-  <!-- BOTTOM NAV -->
-  <nav class="bottom-nav">
-    <a href="index.html"><i class="fa fa-house"></i> Home</a>
-    <a href="level.html"><i class="fa fa-layer-group"></i> Level</a>
-    <a href="history.html"><i class="fa fa-clock-rotate-left"></i> History</a>
-    <a href="team.html"><i class="fa fa-users"></i> Team</a>
-    <a href="profile.html" class="active"><i class="fa fa-user"></i> Profile</a>
-  </nav>
+  <div id="bottom-nav"></div>
 
   <!-- SCRIPT -->
   <script>
@@ -138,7 +132,7 @@
 
         const note = document.getElementById("withdrawEligibilityNote");
         if (data.requiresPackageInvestmentForBonusWithdrawal && Number(data.lockedIncentiveBalance || 0) > 0) {
-          note.textContent = `Ksh ${Number(data.lockedIncentiveBalance).toFixed(2)} from your welcome bonus/referral earnings is locked until you invest in a package plan from Starter upwards.`;
+          note.textContent = `Ksh ${Number(data.lockedIncentiveBalance).toFixed(2)} from your deposited/recharged balance, welcome bonus and referral earnings is locked until you invest in a package plan from Starter upwards.`;
         } else {
           note.textContent = "Withdrawals for unlocked balances are available within the allowed processing hours.";
         }

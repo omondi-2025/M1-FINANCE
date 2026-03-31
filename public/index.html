@@ -83,6 +83,23 @@
       font-size: 12px;
       color: #666;
     }
+    .locked-balance-card {
+      border-left: 5px solid #f59e0b;
+      background: #fffbea;
+      display: none;
+    }
+    .locked-balance-card.show {
+      display: block;
+    }
+    .locked-balance-card h3 {
+      color: #b45309;
+      margin-bottom: 6px;
+    }
+    .locked-balance-card p {
+      color: #5b4a1a;
+      line-height: 1.5;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
@@ -125,6 +142,12 @@
     <div class="dashboard-card balance-card">
       <p>Account Balance</p>
       <h2>KES <span id="balance">0.00</span></h2>
+    </div>
+
+    <div id="lockedBalanceCard" class="dashboard-card locked-balance-card">
+      <h3><i class="fa fa-lock"></i> Locked Balance</h3>
+      <p><strong>KES <span id="lockedBalance">0.00</span></strong> is currently locked.</p>
+      <p id="lockedBalanceNote">Invest in a package plan from Starter upwards to unlock your funds for withdrawal.</p>
     </div>
 
     <div class="stats-grid">
@@ -272,6 +295,16 @@
         document.getElementById("referralEarnings").textContent = formatCurrency(data.referralEarnings);
         document.getElementById("totalIncome").textContent = formatCurrency(data.totalIncome);
         updateWhatsappLink(data.referralCode, data.phone);
+
+        const lockedCard = document.getElementById("lockedBalanceCard");
+        const lockedAmount = Number(data.lockedIncentiveBalance || data.lockedBonusReferralBalance || 0);
+        if (lockedAmount > 0 && !data.hasPackageInvestment) {
+          lockedCard.classList.add("show");
+          document.getElementById("lockedBalance").textContent = formatCurrency(lockedAmount);
+          document.getElementById("lockedBalanceNote").textContent = data.withdrawalEligibilityNote || "Invest in a package plan from Starter upwards to unlock your funds for withdrawal.";
+        } else {
+          lockedCard.classList.remove("show");
+        }
 
         document.getElementById("errorMsg").style.display = "none";
       } catch (err) {

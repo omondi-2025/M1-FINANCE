@@ -14,6 +14,7 @@ body {
   font-family: "Segoe UI", Tahoma, sans-serif;
   background: #ffd600; /* YELLOW */
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 /* =========================
@@ -24,12 +25,14 @@ body {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
+  padding: 20px 14px 28px;
 }
 
 /* AUTH CARD */
-form {
+.auth-page form {
   background: #ffffff;
-  width: 360px;
+  width: min(100%, 420px);
+  max-width: 420px;
   padding: 30px 25px;
   border-radius: 12px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
@@ -101,7 +104,7 @@ button:hover {
 }
 
 /* TEXT BELOW FORM */
-form p {
+.auth-page form p {
   text-align: center;
   margin-top: 18px;
   font-size: 14px;
@@ -109,14 +112,39 @@ form p {
 }
 
 /* LINKS */
-form p a {
+.auth-page form p a {
   color: #d32f2f;
   text-decoration: none;
   font-weight: bold;
 }
 
-form p a:hover {
+.auth-page form p a:hover {
   text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .auth-page {
+    align-items: flex-start;
+    padding: 18px 12px 32px;
+  }
+
+  .auth-page form {
+    width: 100%;
+    max-width: none;
+    padding: 24px 16px;
+    border-radius: 16px;
+  }
+
+  .auth-page h2 {
+    font-size: 24px;
+    margin-bottom: 18px;
+  }
+
+  .auth-page .input-group input {
+    font-size: 16px;
+    padding-top: 13px;
+    padding-bottom: 13px;
+  }
 }
 
 /* =========================
@@ -606,10 +634,11 @@ body.dashboard-page {
 ============================== */
 .withdraw-card {
   background: #fff;
+  width: 100%;
+  max-width: 520px;
   padding: 25px 20px;
   border-radius: 12px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
-  max-width: 400px;
   margin: 20px auto;
   text-align: center;
 }
@@ -619,6 +648,7 @@ body.dashboard-page {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
 }
 
 .withdraw-form .input-group {
@@ -675,15 +705,28 @@ body.dashboard-page {
 }
 
 /* Responsive */
-@media (max-width: 400px) {
+@media (max-width: 480px) {
   .withdraw-card {
-    margin: 10px;
-    padding: 20px 15px;
+    width: 100%;
+    max-width: 100%;
+    margin: 12px 0;
+    padding: 18px 14px;
+  }
+
+  .withdraw-rules {
+    width: 100%;
+    max-width: 100%;
+    margin: 12px 0;
+    padding: 16px 14px;
   }
 
   .withdraw-form input,
   .withdraw-form button {
     width: 100%;
+  }
+
+  .withdraw-table {
+    width: 620px;
   }
 }
 /* ==============================

@@ -97,7 +97,7 @@
     <div class="dashboard-card">
       <h3 style="margin-bottom: 8px; color: #138a4b;">🎁 New User Welcome Bonus</h3>
       <p style="font-size: 14px; color: #444; line-height: 1.5;">
-        First-time registered users can claim <strong>KES 100</strong> instantly once only. The welcome bonus and referral earnings become withdrawable after you invest in a package plan from <strong>Starter</strong> upwards.
+        First-time registered users can claim <strong>KES 100</strong> instantly once only. Deposited/recharged funds, the welcome bonus, and referral earnings become withdrawable only after you invest in a package plan from <strong>Starter</strong> upwards.
       </p>
       <button id="claimBonusBtn" class="claim-btn" type="button" onclick="claimWelcomeBonus()">
         Claim Ksh 100 Now
@@ -309,11 +309,11 @@
       if (!note) return;
 
       if (!hasPackageInvestment && Number(lockedIncentiveBalance || 0) > 0) {
-        note.textContent = `Ksh ${formatCurrency(lockedIncentiveBalance)} from your welcome bonus/referral earnings is locked for withdrawal until you invest in a package plan from Starter upwards. Current withdrawable balance: Ksh ${formatCurrency(withdrawableBalance)}.`;
+        note.textContent = `Ksh ${formatCurrency(lockedIncentiveBalance)} from your deposited/recharged balance, welcome bonus and referral earnings is locked for withdrawal until you invest in a package plan from Starter upwards. Current withdrawable balance: Ksh ${formatCurrency(withdrawableBalance)}.`;
         return;
       }
 
-      note.textContent = "Your package investment unlocks withdrawal of welcome bonus and referral earnings.";
+      note.textContent = "Your package investment unlocks withdrawal of deposited/recharged funds, welcome bonus and referral earnings.";
     }
 
     async function claimWelcomeBonus() {

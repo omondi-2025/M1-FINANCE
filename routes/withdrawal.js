@@ -14,13 +14,15 @@ function getLockedIncentiveBalance(user) {
     return 0;
   }
 
-  const welcomeBonus = user?.welcomeBonusClaimed ? 100 : 0;
-  const referralBalance = Number(user?.referralEarnings || 0);
-  return Number((welcomeBonus + referralBalance).toFixed(2));
+  return Number(Number(user?.balance || 0).toFixed(2));
 }
 
 function getWithdrawableBalance(user) {
-  return Math.max(0, Number((Number(user?.balance || 0) - getLockedIncentiveBalance(user)).toFixed(2)));
+  if (!hasQualifyingPackageInvestment(user)) {
+    return 0;
+  }
+
+  return Math.max(0, Number(Number(user?.balance || 0).toFixed(2)));
 }
 
 router.get("/today", auth, async (req, res) => {
@@ -75,7 +77,7 @@ router.post("/", auth, async (req, res) => {
 
     if (withdrawableBalance < amount) {
       const restrictionMessage = !hasPackageInvestment && lockedIncentiveBalance > 0
-        ? `Only Ksh ${withdrawableBalance.toFixed(2)} is currently withdrawable. Your Ksh ${lockedIncentiveBalance.toFixed(2)} welcome bonus and referral earnings will unlock after you invest in a package plan starting from Starter.`
+        ? `Your Ksh ${lockedIncentiveBalance.toFixed(2)} account balance is locked for withdrawal until you invest in a package plan starting from Starter. Deposited/recharged funds, welcome bonus and referral earnings unlock after that investment.`
         : "Insufficient balance";
 
       return res.status(400).json({

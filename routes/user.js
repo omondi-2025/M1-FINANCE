@@ -41,19 +41,15 @@ function sumAmounts(items = []) {
 
 function getWithdrawalAccess(user) {
   const hasPackageInvestment = Array.isArray(user?.investments) && user.investments.length > 0;
-  const lockedIncentiveBalance = hasPackageInvestment
-    ? 0
-    : Number((user.welcomeBonusClaimed ? 100 : 0) + Number(user.referralEarnings || 0));
-  const withdrawableBalance = Math.max(
-    0,
-    Number((Number(user.balance || 0) - lockedIncentiveBalance).toFixed(2))
-  );
+  const totalBalance = Number(user?.balance || 0);
+  const lockedIncentiveBalance = hasPackageInvestment ? 0 : totalBalance;
+  const withdrawableBalance = hasPackageInvestment ? Number(totalBalance.toFixed(2)) : 0;
 
   return {
     hasPackageInvestment,
     lockedIncentiveBalance: Number(lockedIncentiveBalance.toFixed(2)),
     withdrawableBalance,
-    requiresPackageInvestmentForBonusWithdrawal: !hasPackageInvestment && lockedIncentiveBalance > 0,
+    requiresPackageInvestmentForBonusWithdrawal: !hasPackageInvestment && totalBalance > 0,
   };
 }
 
@@ -72,10 +68,10 @@ function getWithdrawableBalance(user) {
 function getWithdrawalEligibilityNote(user) {
   const access = getWithdrawalAccess(user);
   if (access.requiresPackageInvestmentForBonusWithdrawal) {
-    return "Welcome bonus and referral earnings can only be withdrawn after you invest in the Starter package or any higher package plan.";
+    return "Deposited/recharged money, welcome bonus and referral earnings can only be withdrawn after you invest in the Starter package or any higher package plan.";
   }
 
-  return "Your welcome bonus and referral earnings are unlocked for withdrawal.";
+  return "Your funds are unlocked for withdrawal because you have invested in a package plan.";
 }
 
 function getRangeStarts(now = new Date()) {
