@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>M1 Finance | Company Offers</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .offers-section-title {
+      color: #0d47a1;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .offers-note {
+      font-size: 14px;
+      color: #444;
+      line-height: 1.6;
+    }
+    .offers-table {
+      width: 100%;
+      min-width: 700px;
+      border-collapse: collapse;
+      background: #fff;
+    }
+    .offers-table th,
+    .offers-table td {
+      padding: 12px 10px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+      font-size: 13px;
+    }
+    .offers-table th {
+      background: #eff6ff;
+      color: #0d47a1;
+    }
+    .highlight-text {
+      color: #138a4b;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <header class="top-header">
+    <h2>Company Offers</h2>
+    <p class="user-info">View all available package plans and wealth fund opportunities.</p>
+  </header>
+
+  <main class="dashboard-content">
+    <div class="dashboard-card offers-note">
+      <p>
+        Below are the current <strong>M1 Finance</strong> investment and wealth fund offers.
+        Earnings for package plans start reflecting after <strong>24 hours</strong> from the exact investment time.
+      </p>
+    </div>
+
+    <div class="dashboard-card">
+      <h3 class="offers-section-title"><i class="fa fa-layer-group"></i> Package Investment Plans</h3>
+      <div class="table-wrapper">
+        <table class="offers-table">
+          <thead>
+            <tr>
+              <th>Package</th>
+              <th>Amount</th>
+              <th>Daily Earnings</th>
+              <th>Duration</th>
+              <th>Total Expected</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Starter</td><td>KES 800</td><td>KES 40</td><td>40 days</td><td class="highlight-text">KES 1,600</td></tr>
+            <tr><td>Bronze</td><td>KES 1,600</td><td>KES 80</td><td>40 days</td><td class="highlight-text">KES 3,200</td></tr>
+            <tr><td>Silver</td><td>KES 6,000</td><td>KES 300</td><td>40 days</td><td class="highlight-text">KES 12,000</td></tr>
+            <tr><td>Gold</td><td>KES 15,000</td><td>KES 750</td><td>40 days</td><td class="highlight-text">KES 30,000</td></tr>
+            <tr><td>Diamond</td><td>KES 32,000</td><td>KES 1,600</td><td>40 days</td><td class="highlight-text">KES 64,000</td></tr>
+            <tr><td>Platinum</td><td>KES 75,000</td><td>KES 3,750</td><td>40 days</td><td class="highlight-text">KES 150,000</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="dashboard-card">
+      <h3 class="offers-section-title"><i class="fa fa-coins"></i> Wealth Fund Offers</h3>
+      <div class="table-wrapper">
+        <table class="offers-table">
+          <thead>
+            <tr>
+              <th>Wealth Fund</th>
+              <th>Minimum Amount</th>
+              <th>Daily Earnings Rate</th>
+              <th>Duration</th>
+              <th>Total Expected</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>South Africa Oil</td><td>KES 100</td><td>5% daily</td><td>10 days</td><td class="highlight-text">150% of capital</td></tr>
+            <tr><td>Petrol in Nigeria</td><td>KES 100</td><td>10% daily</td><td>20 days</td><td class="highlight-text">300% of capital</td></tr>
+            <tr><td>Crypto Trading</td><td>KES 500</td><td>15% daily</td><td>10 days</td><td class="highlight-text">250% of capital</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <div id="bottom-nav"></div>
+  <script src="js/bottomNav.js"></script>
+</body>
+</html>

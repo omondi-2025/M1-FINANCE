@@ -3,8 +3,8 @@ const router = express.Router();
 const Recharge = require("../models/Recharge");
 const User = require("../models/User");
 const auth = require("../middleware/auth");
-const nodemailer = require("nodemailer");
 const crypto = require("crypto");
+const { sendAdminNotificationEmail } = require("../utils/emailService");
 
 function generateCode() {
   return crypto.randomBytes(6).toString("base64").replace(/[^A-Za-z0-9]/g, "").slice(0, 10);
@@ -20,26 +20,6 @@ async function generateUniqueCode() {
   return code;
 }
 
-const emailHost = process.env.EMAIL_HOST || "smtp.gmail.com";
-const emailPort = Number(process.env.EMAIL_PORT || 465);
-
-const transporter = nodemailer.createTransport({
-  host: emailHost,
-  port: emailPort,
-  secure: emailPort === 465,
-  family: 4,
-  connectionTimeout: 15000,
-  greetingTimeout: 15000,
-  socketTimeout: 20000,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  tls: {
-    servername: emailHost,
-    minVersion: "TLSv1.2",
-  },
-});
 
 function isValidMpesaMessage(message = "") {
   const text = message.replace(/\s+/g, " ").trim();
@@ -60,37 +40,30 @@ function extractTransactionId(message = "") {
 }
 
 async function sendRechargeDocument(recharge, user = {}, adminUrl) {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) return;
-
-  try {
-    await transporter.sendMail({
-      from: `"M1 Finance" <${process.env.EMAIL_USER}>`,
-      to: process.env.EMAIL_USER,
-      subject: `RECHARGE CONFIRMATION — CODE: ${recharge.code}`,
-      text: `Recharge confirmation document\n\nFull Name: ${recharge.fullName}\nPhone: ${recharge.phone}\nEmail: ${user.email || "N/A"}\nReferral Code: ${user.referralCode || "N/A"}\nRecharge Amount: KES ${recharge.amount}\nSystem Code: ${recharge.code}\nTransaction Message: ${recharge.transactionMessage || "N/A"}\nStatus: ${recharge.status}\n\nAdmin page: ${adminUrl}`,
-      html: `
-        <h2>M1 Finance Recharge Confirmation Document</h2>
-        <table style="border-collapse:collapse;width:100%;max-width:700px;">
-          <tr><td style="padding:8px;border:1px solid #ddd;"><strong>Full Name</strong></td><td style="padding:8px;border:1px solid #ddd;">${recharge.fullName}</td></tr>
-          <tr><td style="padding:8px;border:1px solid #ddd;"><strong>Phone Number</strong></td><td style="padding:8px;border:1px solid #ddd;">${recharge.phone}</td></tr>
-          <tr><td style="padding:8px;border:1px solid #ddd;"><strong>Email</strong></td><td style="padding:8px;border:1px solid #ddd;">${user.email || "N/A"}</td></tr>
-          <tr><td style="padding:8px;border:1px solid #ddd;"><strong>User Referral Code</strong></td><td style="padding:8px;border:1px solid #ddd;">${user.referralCode || "N/A"}</td></tr>
-          <tr><td style="padding:8px;border:1px solid #ddd;"><strong>Recharge Amount</strong></td><td style="padding:8px;border:1px solid #ddd;">KES ${recharge.amount}</td></tr>
-          <tr><td style="padding:8px;border:1px solid #ddd;"><strong>Unique System Code</strong></td><td style="padding:8px;border:1px solid #ddd;">${recharge.code}</td></tr>
-          <tr><td style="padding:8px;border:1px solid #ddd;"><strong>M-Pesa Transaction ID</strong></td><td style="padding:8px;border:1px solid #ddd;">${recharge.transactionId || "N/A"}</td></tr>
-          <tr><td style="padding:8px;border:1px solid #ddd;"><strong>Transaction Message</strong></td><td style="padding:8px;border:1px solid #ddd;white-space:pre-wrap;">${(recharge.transactionMessage || "").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</td></tr>
-          <tr><td style="padding:8px;border:1px solid #ddd;"><strong>Status</strong></td><td style="padding:8px;border:1px solid #ddd;">${recharge.status}</td></tr>
-        </table>
-        <p style="margin-top:16px;">
-          <a href="${adminUrl}" style="display:inline-block;padding:10px 16px;background:#2563eb;color:#fff;text-decoration:none;border-radius:8px;">
-            Open Admin Page
-          </a>
-        </p>
-      `,
-    });
-  } catch (err) {
-    console.error("Recharge email notification failed:", err.message);
-  }
+  return sendAdminNotificationEmail({
+    subject: `RECHARGE CONFIRMATION — CODE: ${recharge.code}`,
+    text: `Recharge confirmation document\n\nFull Name: ${recharge.fullName}\nPhone: ${recharge.phone}\nEmail: ${user.email || "N/A"}\nReferral Code: ${user.referralCode || "N/A"}\nRecharge Amount: KES ${recharge.amount}\nSystem Code: ${recharge.code}\nTransaction Message: ${recharge.transactionMessage || "N/A"}\nStatus: ${recharge.status}\n\nAdmin page: ${adminUrl}`,
+    html: `
+      <h2>M1 Finance Recharge Confirmation Document</h2>
+      <table style="border-collapse:collapse;width:100%;max-width:700px;">
+        <tr><td style="padding:8px;border:1px solid #ddd;"><strong>Full Name</strong></td><td style="padding:8px;border:1px solid #ddd;">${recharge.fullName}</td></tr>
+        <tr><td style="padding:8px;border:1px solid #ddd;"><strong>Phone Number</strong></td><td style="padding:8px;border:1px solid #ddd;">${recharge.phone}</td></tr>
+        <tr><td style="padding:8px;border:1px solid #ddd;"><strong>Email</strong></td><td style="padding:8px;border:1px solid #ddd;">${user.email || "N/A"}</td></tr>
+        <tr><td style="padding:8px;border:1px solid #ddd;"><strong>User Referral Code</strong></td><td style="padding:8px;border:1px solid #ddd;">${user.referralCode || "N/A"}</td></tr>
+        <tr><td style="padding:8px;border:1px solid #ddd;"><strong>Recharge Amount</strong></td><td style="padding:8px;border:1px solid #ddd;">KES ${recharge.amount}</td></tr>
+        <tr><td style="padding:8px;border:1px solid #ddd;"><strong>Unique System Code</strong></td><td style="padding:8px;border:1px solid #ddd;">${recharge.code}</td></tr>
+        <tr><td style="padding:8px;border:1px solid #ddd;"><strong>M-Pesa Transaction ID</strong></td><td style="padding:8px;border:1px solid #ddd;">${recharge.transactionId || "N/A"}</td></tr>
+        <tr><td style="padding:8px;border:1px solid #ddd;"><strong>Transaction Message</strong></td><td style="padding:8px;border:1px solid #ddd;white-space:pre-wrap;">${(recharge.transactionMessage || "").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</td></tr>
+        <tr><td style="padding:8px;border:1px solid #ddd;"><strong>Status</strong></td><td style="padding:8px;border:1px solid #ddd;">${recharge.status}</td></tr>
+      </table>
+      <p style="margin-top:16px;">
+        <a href="${adminUrl}" style="display:inline-block;padding:10px 16px;background:#2563eb;color:#fff;text-decoration:none;border-radius:8px;">
+          Open Admin Page
+        </a>
+      </p>
+    `,
+    replyTo: user.email || undefined,
+  });
 }
 
 router.post("/create", auth, async (req, res) => {
@@ -195,7 +168,8 @@ router.post("/submit-message", auth, async (req, res) => {
     await recharge.save();
 
     const user = await User.findById(recharge.userId);
-    const adminUrl = `${req.protocol}://${req.get("host")}/admin.html`;
+    const appBaseUrl = String(process.env.FRONTEND_URL || `${req.protocol}://${req.get("host")}`).replace(/\/$/, "");
+    const adminUrl = `${appBaseUrl}/admin.html`;
     await sendRechargeDocument(recharge, user || {}, adminUrl);
 
     res.json({

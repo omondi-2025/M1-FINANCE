@@ -1,5 +1,4 @@
 const express = require("express");
-const nodemailer = require("nodemailer");
 const User = require("../models/User");
 const Recharge = require("../models/Recharge");
 const Withdrawal = require("../models/Withdrawal");
@@ -7,6 +6,7 @@ const EarningLog = require("../models/EarningLog");
 const WealthFundInvestment = require("../models/WealthFundInvestment");
 const Notification = require("../models/Notification");
 const auth = require("../middleware/auth");
+const { sendAdminNotificationEmail } = require("../utils/emailService");
 
 const router = express.Router();
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -16,13 +16,6 @@ const REFERRAL_RATES = {
   3: 0.01,
 };
 
-const mailer = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
 
 function normalizePhone(phone = "") {
   phone = String(phone).replace(/\s+/g, "");
@@ -477,10 +470,7 @@ router.post("/support", auth, async (req, res) => {
       });
     }
 
-    await mailer.sendMail({
-      from: `"${fullName}" <${process.env.EMAIL_USER}>`,
-      to: process.env.EMAIL_USER,
-      replyTo: replyEmail,
+    const supportSent = await sendAdminNotificationEmail({
       subject: `SUPPORT REQUEST — ${subject}`,
       text: `Support request from M1 Finance user\n\nFull Name: ${fullName}\nReply Email: ${replyEmail}\nPhone: ${phone}\nUser ID: ${user._id}\n\nSubject: ${subject}\n\nMessage:\n${message}`,
       html: `
@@ -493,7 +483,12 @@ router.post("/support", auth, async (req, res) => {
         <p><strong>Message:</strong></p>
         <p>${message.replace(/\n/g, "<br>")}</p>
       `,
+      replyTo: replyEmail,
     });
+
+    if (!supportSent) {
+      return res.status(500).json({ success: false, message: "Failed to send support email. Configure an HTTP email provider like Resend on Render or upgrade the service." });
+    }
 
     res.json({
       success: true,
