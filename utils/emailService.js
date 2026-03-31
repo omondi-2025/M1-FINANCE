@@ -14,6 +14,10 @@ function getTransporter() {
   });
 }
 
+function getAdminNotificationEmail() {
+  return process.env.ADMIN_NOTIFICATION_EMAIL || process.env.EMAIL_USER || "";
+}
+
 async function sendUserEmail({ to, subject, text, html }) {
   if (!to || !hasMailConfig()) return false;
 
@@ -33,7 +37,21 @@ async function sendUserEmail({ to, subject, text, html }) {
   }
 }
 
+async function sendAdminNotificationEmail({ subject, text, html }) {
+  const adminEmail = getAdminNotificationEmail();
+  if (!adminEmail) return false;
+
+  return sendUserEmail({
+    to: adminEmail,
+    subject,
+    text,
+    html,
+  });
+}
+
 module.exports = {
   sendUserEmail,
+  sendAdminNotificationEmail,
   hasMailConfig,
+  getAdminNotificationEmail,
 };

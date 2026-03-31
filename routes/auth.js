@@ -1,18 +1,10 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const nodemailer = require("nodemailer");
 const User = require("../models/User");
+const { sendUserEmail } = require("../utils/emailService");
 
 const router = express.Router();
-
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
 
 /* ======================
    📞 PHONE NORMALIZER
@@ -43,6 +35,26 @@ function normalizePhone(phone) {
 /* 🔐 Generate random referral code */
 function generateReferralCode() {
   return crypto.randomBytes(4).toString("hex").toUpperCase();
+}
+
+function getPublicAppBaseUrl(req) {
+  const configuredBaseUrl =
+    process.env.FRONTEND_URL ||
+    process.env.PUBLIC_APP_URL ||
+    process.env.APP_URL;
+
+  if (configuredBaseUrl) {
+    return String(configuredBaseUrl).replace(/\/$/, "");
+  }
+
+  const origin = req.headers.origin;
+  if (origin) {
+    return String(origin).replace(/\/$/, "");
+  }
+
+  const protocol = req.headers["x-forwarded-proto"] || req.protocol || "https";
+  const host = req.headers["x-forwarded-host"] || req.get("host");
+  return `${protocol}://${host}`.replace(/\/$/, "");
 }
 
 /* ======================
@@ -138,13 +150,13 @@ router.post("/forgot-password", async (req, res) => {
     user.resetPasswordExpires = new Date(Date.now() + 30 * 60 * 1000);
     await user.save();
 
-    const resetLink = `${req.protocol}://${req.get("host")}/reset-password.html?token=${rawToken}&id=${user._id}`;
+    const appBaseUrl = getPublicAppBaseUrl(req);
+    const resetLink = `${appBaseUrl}/reset-password.html?token=${rawToken}&id=${user._id}`;
 
-    await transporter.sendMail({
-      from: `"M1 Finance" <${process.env.EMAIL_USER}>`,
+    const emailSent = await sendUserEmail({
       to: user.email,
       subject: "M1 Finance Password Reset",
-      text: `Hello ${user.fullName},\n\nUse the link below to reset your password:\n${resetLink}\n\nThis link expires in 30 minutes.`,
+      text: `Hello ${user.fullName},\n\nUse the link below to reset your password:\n${resetLink}\n\nThis link expires in 30 minutes. If the button does not open, copy and paste the full link into your browser.`,
       html: `
         <p>Hello <strong>${user.fullName}</strong>,</p>
         <p>You requested to reset your M1 Finance password.</p>
@@ -153,9 +165,18 @@ router.post("/forgot-password", async (req, res) => {
             Reset Password
           </a>
         </p>
+        <p>If the button does not open, copy this link into your browser:</p>
+        <p style="word-break:break-all;">${resetLink}</p>
         <p>This link expires in 30 minutes.</p>
       `,
     });
+
+    if (!emailSent) {
+      user.resetPasswordToken = null;
+      user.resetPasswordExpires = null;
+      await user.save();
+      return res.status(500).json({ success: false, message: "Failed to send password reset email. Please try again later." });
+    }
 
     res.json(genericResponse);
   } catch (err) {
@@ -198,6 +219,13 @@ router.post("/reset-password", async (req, res) => {
     user.resetPasswordToken = null;
     user.resetPasswordExpires = null;
     await user.save();
+
+    await sendUserEmail({
+      to: user.email,
+      subject: "M1 Finance Password Changed Successfully",
+      text: `Hello ${user.fullName},\n\nYour M1 Finance password was changed successfully. If you did not make this change, please contact support immediately.`,
+      html: `<p>Hello <strong>${user.fullName}</strong>,</p><p>Your M1 Finance password was changed successfully.</p><p>If you did not make this change, please contact support immediately.</p>`,
+    });
 
     res.json({
       success: true,

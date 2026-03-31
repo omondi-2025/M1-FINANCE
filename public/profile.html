@@ -97,12 +97,13 @@
     <div class="dashboard-card">
       <h3 style="margin-bottom: 8px; color: #138a4b;">🎁 New User Welcome Bonus</h3>
       <p style="font-size: 14px; color: #444; line-height: 1.5;">
-        First-time registered users can claim <strong>KES 100</strong> instantly once only.
+        First-time registered users can claim <strong>KES 100</strong> instantly once only. The welcome bonus and referral earnings become withdrawable after you invest in a package plan from <strong>Starter</strong> upwards.
       </p>
       <button id="claimBonusBtn" class="claim-btn" type="button" onclick="claimWelcomeBonus()">
         Claim Ksh 100 Now
       </button>
       <p id="bonusStatus" class="bonus-status"></p>
+      <p id="withdrawRuleNote" class="bonus-status"></p>
     </div>
 
     <div class="dashboard-card">
@@ -303,6 +304,18 @@
       }
     }
 
+    function updateWithdrawalRuleNote(hasPackageInvestment, lockedIncentiveBalance, withdrawableBalance) {
+      const note = document.getElementById("withdrawRuleNote");
+      if (!note) return;
+
+      if (!hasPackageInvestment && Number(lockedIncentiveBalance || 0) > 0) {
+        note.textContent = `Ksh ${formatCurrency(lockedIncentiveBalance)} from your welcome bonus/referral earnings is locked for withdrawal until you invest in a package plan from Starter upwards. Current withdrawable balance: Ksh ${formatCurrency(withdrawableBalance)}.`;
+        return;
+      }
+
+      note.textContent = "Your package investment unlocks withdrawal of welcome bonus and referral earnings.";
+    }
+
     async function claimWelcomeBonus() {
       const btn = document.getElementById("claimBonusBtn");
       btn.disabled = true;
@@ -364,6 +377,11 @@
         document.getElementById("earnings").textContent = formatCurrency(data.totalEarnings);
 
         updateBonusState(data.welcomeBonusClaimed, data.welcomeBonusClaimedAt);
+        updateWithdrawalRuleNote(
+          data.hasPackageInvestment,
+          data.lockedIncentiveBalance,
+          data.withdrawableBalance
+        );
       } catch (err) {
         console.error("Profile load failed:", err);
         alert("Failed to load profile information.");

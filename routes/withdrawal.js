@@ -3,6 +3,25 @@ const router = express.Router();
 const Withdrawal = require("../models/Withdrawal");
 const User = require("../models/User");
 const auth = require("../middleware/auth");
+const { sendAdminNotificationEmail } = require("../utils/emailService");
+
+function hasQualifyingPackageInvestment(user) {
+  return Array.isArray(user?.investments) && user.investments.some((item) => Number(item.price || 0) > 0);
+}
+
+function getLockedIncentiveBalance(user) {
+  if (hasQualifyingPackageInvestment(user)) {
+    return 0;
+  }
+
+  const welcomeBonus = user?.welcomeBonusClaimed ? 100 : 0;
+  const referralBalance = Number(user?.referralEarnings || 0);
+  return Number((welcomeBonus + referralBalance).toFixed(2));
+}
+
+function getWithdrawableBalance(user) {
+  return Math.max(0, Number((Number(user?.balance || 0) - getLockedIncentiveBalance(user)).toFixed(2)));
+}
 
 router.get("/today", auth, async (req, res) => {
   try {
@@ -50,8 +69,21 @@ router.post("/", auth, async (req, res) => {
       return res.status(400).json({ success: false, message: "Minimum withdrawal is Ksh 80" });
     }
 
-    if (Number(user.balance || 0) < amount) {
-      return res.status(400).json({ success: false, message: "Insufficient balance" });
+    const hasPackageInvestment = hasQualifyingPackageInvestment(user);
+    const lockedIncentiveBalance = getLockedIncentiveBalance(user);
+    const withdrawableBalance = getWithdrawableBalance(user);
+
+    if (withdrawableBalance < amount) {
+      const restrictionMessage = !hasPackageInvestment && lockedIncentiveBalance > 0
+        ? `Only Ksh ${withdrawableBalance.toFixed(2)} is currently withdrawable. Your Ksh ${lockedIncentiveBalance.toFixed(2)} welcome bonus and referral earnings will unlock after you invest in a package plan starting from Starter.`
+        : "Insufficient balance";
+
+      return res.status(400).json({
+        success: false,
+        message: restrictionMessage,
+        withdrawableBalance,
+        lockedIncentiveBalance,
+      });
     }
 
     const serviceFee = Number((amount * 0.10).toFixed(2));
@@ -87,12 +119,28 @@ router.post("/", auth, async (req, res) => {
 
     await newWithdrawal.save();
 
+    const adminNotified = await sendAdminNotificationEmail({
+      subject: "M1 Finance Withdrawal Request Submitted",
+      text: `A new withdrawal request has been submitted by ${user.fullName} (${user.phone}). Requested amount: KES ${amount.toFixed(2)}. Service fee: KES ${serviceFee.toFixed(2)}. Net payout: KES ${netAmount.toFixed(2)}.`,
+      html: `
+        <p>A new withdrawal request has been submitted.</p>
+        <ul>
+          <li><strong>Name:</strong> ${user.fullName}</li>
+          <li><strong>Phone:</strong> ${user.phone}</li>
+          <li><strong>Requested amount:</strong> KES ${amount.toFixed(2)}</li>
+          <li><strong>Service fee:</strong> KES ${serviceFee.toFixed(2)}</li>
+          <li><strong>Net payout:</strong> KES ${netAmount.toFixed(2)}</li>
+        </ul>
+      `,
+    });
+
     res.json({
       success: true,
       message: `Withdrawal request submitted. A 10% service fee of Ksh ${serviceFee.toFixed(2)} will be deducted, so you will receive Ksh ${netAmount.toFixed(2)} once approved.`,
       newBalance: Number(user.balance || 0),
       serviceFee,
       netAmount,
+      adminNotified,
     });
   } catch (err) {
     console.error(err);

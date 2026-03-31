@@ -39,6 +39,45 @@ function sumAmounts(items = []) {
   return items.reduce((sum, item) => sum + Number(item.amount || 0), 0);
 }
 
+function getWithdrawalAccess(user) {
+  const hasPackageInvestment = Array.isArray(user?.investments) && user.investments.length > 0;
+  const lockedIncentiveBalance = hasPackageInvestment
+    ? 0
+    : Number((user.welcomeBonusClaimed ? 100 : 0) + Number(user.referralEarnings || 0));
+  const withdrawableBalance = Math.max(
+    0,
+    Number((Number(user.balance || 0) - lockedIncentiveBalance).toFixed(2))
+  );
+
+  return {
+    hasPackageInvestment,
+    lockedIncentiveBalance: Number(lockedIncentiveBalance.toFixed(2)),
+    withdrawableBalance,
+    requiresPackageInvestmentForBonusWithdrawal: !hasPackageInvestment && lockedIncentiveBalance > 0,
+  };
+}
+
+function hasEligiblePackageInvestment(user) {
+  return getWithdrawalAccess(user).hasPackageInvestment;
+}
+
+function getLockedBonusAndReferralBalance(user) {
+  return getWithdrawalAccess(user).lockedIncentiveBalance;
+}
+
+function getWithdrawableBalance(user) {
+  return getWithdrawalAccess(user).withdrawableBalance;
+}
+
+function getWithdrawalEligibilityNote(user) {
+  const access = getWithdrawalAccess(user);
+  if (access.requiresPackageInvestmentForBonusWithdrawal) {
+    return "Welcome bonus and referral earnings can only be withdrawn after you invest in the Starter package or any higher package plan.";
+  }
+
+  return "Your welcome bonus and referral earnings are unlocked for withdrawal.";
+}
+
 function getRangeStarts(now = new Date()) {
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
@@ -197,6 +236,9 @@ router.get("/dashboard", auth, async (req, res) => {
 
     const stats = buildLogStats(logs);
     const { totalInvestmentEarned } = buildInvestmentData(user);
+    const hasPackageInvestment = hasEligiblePackageInvestment(user);
+    const lockedBonusReferralBalance = getLockedBonusAndReferralBalance(user);
+    const withdrawableBalance = getWithdrawableBalance(user);
     const bonusAmount = user.welcomeBonusClaimed ? 100 : 0;
     const wealthFundProfit = wealthFunds.reduce((sum, fund) => sum + Number(fund.accruedProfit || 0), 0);
     const referralTotal = Number(stats.referralEarnings || user.referralEarnings || 0);
@@ -206,12 +248,17 @@ router.get("/dashboard", auth, async (req, res) => {
     );
 
     const totalCashouts = completedWithdrawals.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const withdrawalAccess = getWithdrawalAccess(user);
 
     res.json({
       company: "M1 FINANCE",
       fullName: user.fullName,
       phone: user.phone,
       balance: Number(user.balance || 0),
+      withdrawableBalance: withdrawalAccess.withdrawableBalance,
+      lockedIncentiveBalance: withdrawalAccess.lockedIncentiveBalance,
+      hasPackageInvestment: withdrawalAccess.hasPackageInvestment,
+      requiresPackageInvestmentForBonusWithdrawal: withdrawalAccess.requiresPackageInvestmentForBonusWithdrawal,
       cashouts: Number(totalCashouts || 0),
       dailyIncome: Number(stats.todayIncome || 0),
       weeklyEarnings: Number(stats.weeklyEarnings || 0),
@@ -219,6 +266,10 @@ router.get("/dashboard", auth, async (req, res) => {
       referralEarnings: referralTotal,
       totalIncome: Number(totalIncome || 0),
       referralCode: user.referralCode,
+      hasEligiblePackageInvestment: hasPackageInvestment,
+      lockedBonusReferralBalance,
+      withdrawableBalance,
+      withdrawalEligibilityNote: getWithdrawalEligibilityNote(user),
     });
   } catch (err) {
     console.error("DASHBOARD ERROR:", err);
@@ -259,6 +310,9 @@ router.get("/profile", auth, async (req, res) => {
 
     const { investments, totalInvested, activeDailyPotential, totalInvestmentEarned } = buildInvestmentData(user);
     const stats = buildLogStats(logs);
+    const hasPackageInvestment = hasEligiblePackageInvestment(user);
+    const lockedBonusReferralBalance = getLockedBonusAndReferralBalance(user);
+    const withdrawableBalance = getWithdrawableBalance(user);
     const totalRecharged = approvedRecharges.reduce((sum, item) => sum + Number(item.amount || 0), 0);
     const totalCashouts = completedWithdrawals.reduce((sum, item) => sum + Number(item.amount || 0), 0);
     const wealthFundProfit = wealthFunds.reduce((sum, fund) => sum + Number(fund.accruedProfit || 0), 0);
@@ -267,6 +321,7 @@ router.get("/profile", auth, async (req, res) => {
       stats.totalIncomeFromLogs,
       totalInvestmentEarned + referralTotal + wealthFundProfit + (user.welcomeBonusClaimed ? 100 : 0)
     );
+    const withdrawalAccess = getWithdrawalAccess(user);
 
     res.json({
       fullName: user.fullName,
@@ -274,6 +329,10 @@ router.get("/profile", auth, async (req, res) => {
       email: user.email,
       referralCode: user.referralCode,
       balance: Number(user.balance || 0),
+      withdrawableBalance: withdrawalAccess.withdrawableBalance,
+      lockedIncentiveBalance: withdrawalAccess.lockedIncentiveBalance,
+      hasPackageInvestment: withdrawalAccess.hasPackageInvestment,
+      requiresPackageInvestmentForBonusWithdrawal: withdrawalAccess.requiresPackageInvestmentForBonusWithdrawal,
       totalCashouts: Number(totalCashouts || 0),
       totalRecharged,
       totalInvested,
@@ -283,6 +342,10 @@ router.get("/profile", auth, async (req, res) => {
       totalEarnings,
       welcomeBonusClaimed: Boolean(user.welcomeBonusClaimed),
       welcomeBonusClaimedAt: user.welcomeBonusClaimedAt,
+      hasEligiblePackageInvestment: hasPackageInvestment,
+      lockedBonusReferralBalance,
+      withdrawableBalance,
+      withdrawalEligibilityNote: getWithdrawalEligibilityNote(user),
       investments,
       wealthFunds,
     });

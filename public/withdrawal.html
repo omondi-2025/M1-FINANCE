@@ -32,7 +32,8 @@
     <div class="dashboard-card withdraw-card">
       <h2>Withdraw Funds</h2>
 
-      <p id="balanceInfo">Available Balance: KES <span id="balance">0.00</span></p>
+      <p id="balanceInfo">Withdrawable Balance: KES <span id="balance">0.00</span></p>
+      <p id="withdrawEligibilityNote" style="font-size:13px; color:#0d47a1; margin-bottom:10px;"></p>
 
       <!-- Alert messages -->
       <div id="alertMsg" class="alert"></div>
@@ -132,8 +133,15 @@
         const data = await res.json();
         document.getElementById("fullName").textContent = data.fullName;
         document.getElementById("phone").textContent = data.phone;
-        document.getElementById("balance").textContent = Number(data.balance).toFixed(2);
+        document.getElementById("balance").textContent = Number(data.withdrawableBalance ?? data.balance).toFixed(2);
         document.getElementById("phoneInput").value = data.phone;
+
+        const note = document.getElementById("withdrawEligibilityNote");
+        if (data.requiresPackageInvestmentForBonusWithdrawal && Number(data.lockedIncentiveBalance || 0) > 0) {
+          note.textContent = `Ksh ${Number(data.lockedIncentiveBalance).toFixed(2)} from your welcome bonus/referral earnings is locked until you invest in a package plan from Starter upwards.`;
+        } else {
+          note.textContent = "Withdrawals for unlocked balances are available within the allowed processing hours.";
+        }
       } catch (err) {
         console.error("Error loading user:", err);
       }
