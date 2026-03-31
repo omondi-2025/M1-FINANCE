@@ -1,0 +1,14 @@
+# Backend is hosted on Render
+server.js
+routes/
+models/
+controllers/
+middleware/
+utils/
+
+# Local/dev files
+node_modules/
+.env
+.git/
+coverage/
+README.md
