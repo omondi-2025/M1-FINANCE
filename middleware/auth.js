@@ -1,5 +1,7 @@
 const jwt = require("jsonwebtoken");
 
+const INVALID_TOKEN_VALUES = new Set(["", "null", "undefined", "NaN"]);
+
 module.exports = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
@@ -7,22 +9,27 @@ module.exports = (req, res, next) => {
     return res.status(401).json({ error: "No token provided" });
   }
 
-  const token = authHeader.split(" ")[1];
+  const token = authHeader.slice(7).trim();
+
+  if (!token || INVALID_TOKEN_VALUES.has(token)) {
+    return res.status(401).json({ error: "Invalid or expired token" });
+  }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Attach user ID consistently
     req.user = { id: decoded.id };
 
-    // Optional: log only in development
     if (process.env.NODE_ENV === "development") {
       console.log("Decoded JWT:", decoded);
     }
 
     next();
   } catch (err) {
-    console.error("JWT ERROR:", err.message);
+    const noisyJwtErrors = new Set(["jwt malformed", "invalid token", "jwt must be provided"]);
+    if (!noisyJwtErrors.has(err.message)) {
+      console.error("JWT ERROR:", err.message);
+    }
     return res.status(401).json({ error: "Invalid or expired token" });
   }
 };
