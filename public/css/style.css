@@ -726,7 +726,18 @@ body.dashboard-page {
   }
 
   .withdraw-table {
-    width: 620px;
+    width: 100%;
+    min-width: 600px;
+  }
+
+  .withdraw-table th,
+  .withdraw-table td {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .withdraw-table th {
+    font-size: 13px;
   }
 }
 /* ==============================

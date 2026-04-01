@@ -27,7 +27,7 @@
     </p>
   </header>
 
-  <!-- WITHDRAWAL FORM -->
+  <div class="dashboard-container">
   <main class="dashboard-content">
     <div class="dashboard-card withdraw-card">
       <h2>Withdraw Funds</h2>
@@ -73,25 +73,31 @@
 </div>
 
       <!-- Withdrawal History -->
-      <h3 style="margin-top:30px;">Withdrawal History</h3>
-      <div class="table-wrapper">
-  <table class="withdraw-table">
-    <thead>
-      <tr>
-        <th>Full Name</th>
-        <th>Phone</th>
-        <th>Requested</th>
-        <th>Fee</th>
-        <th>Receives</th>
-        <th>Date & Time</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody id="historyBody">
-      <tr><td colspan="7">Loading history...</td></tr>
-    </tbody>
-  </table>
-</div>
+      <div class="dashboard-card">
+        <h3>Withdrawal History</h3>
+        <div class="table-wrapper">
+    <table class="withdraw-table">
+      <thead>
+        <tr>
+          <th>Full Name</th>
+          <th>Phone</th>
+          <th>Requested</th>
+          <th>Fee</th>
+          <th>Receives</th>
+          <th>Date & Time</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="historyBody">
+        <tr><td colspan="7">Loading history...</td></tr>
+      </tbody>
+    </table>
+  </div>
+      </div>
+  </div>
+  </main>
+  </div>
+
   <div id="bottom-nav"></div>
 
   <!-- SCRIPT -->
