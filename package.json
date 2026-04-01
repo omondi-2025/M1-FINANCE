@@ -9,8 +9,11 @@
   "dependencies": {
     "@lipana/sdk": "^1.0.3",
     "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.22.1",
+    "express-rate-limit": "^7.0.0",
+    "helmet": "^7.0.0",
     "imap": "^0.8.19",
     "imapflow": "^1.2.16",
     "jsonwebtoken": "^9.0.3",

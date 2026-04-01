@@ -3,6 +3,9 @@ const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cron = require("node-cron");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const cors = require("cors");
 
 dotenv.config();
 
@@ -16,6 +19,27 @@ const wealthFundRoutes = require("./routes/wealthfund");
 const { processScheduledEarnings } = require("./utils/earningsProcessor");
 
 const app = express();
+
+app.set("trust proxy", 1); // required when behind proxies (e.g., Render, Heroku)
+
+// Security middleware
+app.use(helmet());
+
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || "https://m1-finance.vercel.app",
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+app.use(cors(corsOptions));
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,               // 100 requests per window per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: "Too many requests from this IP, please try again later.",
+});
+app.use(limiter);
 
 // Middleware
 app.use(express.json());
