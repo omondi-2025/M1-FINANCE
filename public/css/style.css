@@ -746,9 +746,8 @@ body.dashboard-page {
 .withdraw-rules {
   background: #ffffff;             /* white box */
   padding: 15px 20px;             /* some padding */
-  margin: 25px auto;              /* centered horizontally */
+  margin: 20px 0 0 0;              /* top margin only */
   border-radius: 10px;            /* rounded corners */
-  max-width: 400px;               /* width limit */
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
   text-align: left;               /* start text from left margin */
   font-size: 15px;
